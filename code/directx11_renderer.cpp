@@ -545,7 +545,8 @@ b32 CreateRenderTarget(directx_state *State, u32 Width, u32 Height, render_targe
     TexDesc.Height = Height;
     TexDesc.MipLevels = 1;
     TexDesc.ArraySize = 1;
-    TexDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    //TexDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    TexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;;
     TexDesc.SampleDesc.Count = 1;
     TexDesc.SampleDesc.Quality = 0;
     TexDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -1263,7 +1264,8 @@ b32 InitDirectWrite(directx_state *DirectXState, directwrite_state *State)
     }
     
     IDXGISurface *D2DBuffer;
-    Result = DirectXState->SwapChain->GetBuffer(0, __uuidof(IDXGISurface), (void **)&D2DBuffer);
+    //Result = DirectXState->SwapChain->GetBuffer(0, __uuidof(IDXGISurface), (void **)&D2DBuffer);
+    Result = DirectXState->RenderTarget.Texture->QueryInterface(&D2DBuffer);
     if (FAILED(Result))
     {
         State->DeviceContext->Release();
@@ -1271,7 +1273,7 @@ b32 InitDirectWrite(directx_state *DirectXState, directwrite_state *State)
         DXGIDevice->Release();
         D2DFactory->Release();
         DWriteFactory->Release();
-        printf("Failed to get the backbuffer as IDXGISurface!\n");
+        printf("Failed to get a IDXGISurface from the texture!\n");
         return false;
     }
     
@@ -1380,7 +1382,7 @@ void DrawTextW(directwrite_state *State, WCHAR const *String, v2 P)
     assert(State && State->DeviceContext);
     assert(String);
     
-    v2 Offset = V2(60.0f, 20.0f);
+    v2 Offset = V2(600.0f, 20.0f);
     D2D1_RECT_F LayoutRect;
     LayoutRect.top    = P.y - Offset.y;
     LayoutRect.left   = P.x - Offset.x;

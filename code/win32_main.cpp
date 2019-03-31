@@ -189,7 +189,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
         // Rendering
         BeginRendering(&DirectXState);
         {
-            RenderFilledRectangle(&DirectXState, V2(100.0f, 100.0f), V2(100.0f, 100.0f));
+            RenderFilledRectangle(&DirectXState, V2(100.0f, 100.0f), V2(100.0f, 100.0f), V4(1.0f, 0.0f, 0.0f, 1.0f));
+            
+            BeginDraw(&DirectWriteState);
+            DrawText(&DirectWriteState, L"Tjenare!", V2(300.0f, 300.0f));
+            EndDraw(&DirectWriteState);
+            
         }
         EndRendering(&DirectXState);
         
