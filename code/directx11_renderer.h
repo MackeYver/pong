@@ -23,8 +23,8 @@
 //
 
 
-#ifndef DirectX11Renderer__h
-#define DirectX11Renderer__h
+#ifndef directX11_renderer__h
+#define directX11_renderer__h
 
 #include <d3d11.h>
 #include <dxgi.h>
@@ -301,7 +301,7 @@ void ReleaseDirectWrite(directwrite_state *State);
 void BeginDraw(directwrite_state *State);
 HRESULT EndDraw(directwrite_state *State);
 
-void DrawText(directwrite_state *State, WCHAR const *String, v2 P);
+void DrawText(directwrite_state *State, v2 P, wchar_t const *String);
 
 
 #endif // End DirectXRenderer_h

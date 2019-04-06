@@ -34,25 +34,16 @@
 #include "types.h"
 #include "mathematics.h"
 #include "directX11_renderer.h"
+#include "renderer.h"
+#include "game_main.h"
 
 constexpr f32 kFrameTime = 1.0f / 60.0f;
 constexpr f32 kFrameTimeMicroSeconds = 1000000.0f * kFrameTime;
 
 
-
-struct display_metrics
-{
-    u32 WindowWidth;
-    u32 WindowHeight;
-    
-    u32 ScreenWidth;
-    u32 ScreenHeight;
-};
-
-
 struct mouse_state
 {
-    display_metrics *Metrics;
+    display_metrics *DisplayMetrics;
     
     v2  P = v2_zero;
     v2  PrevP = v2_zero;
@@ -60,12 +51,14 @@ struct mouse_state
     b32 RBDown;
 };
 
-
 struct app_state
 {
     mouse_state MouseState;
-    display_metrics Metrics;
+    display_metrics DisplayMetrics;
     HWND hWnd;
+    
+    renderer Renderer;
+    game_state GameState;
 };
 
 
@@ -91,12 +84,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Initial state
     app_state AppState;
-    AppState.Metrics.WindowWidth = 1920;
-    AppState.Metrics.WindowHeight = 1080;
-    AppState.Metrics.ScreenWidth  = GetSystemMetrics(SM_CXSCREEN);
-    AppState.Metrics.ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+    AppState.DisplayMetrics.WindowWidth = 1920;
+    AppState.DisplayMetrics.WindowHeight = 1080;
+    AppState.DisplayMetrics.ScreenWidth  = GetSystemMetrics(SM_CXSCREEN);
+    AppState.DisplayMetrics.ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
     
-    AppState.MouseState.Metrics = &AppState.Metrics;
+    AppState.MouseState.DisplayMetrics = &AppState.DisplayMetrics;
     
     
     
@@ -119,8 +112,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     directx_state DirectXState = {};
     {
         directx_config Config;
-        Config.Width = AppState.Metrics.WindowWidth;
-        Config.Height = AppState.Metrics.WindowHeight;
+        Config.Width = AppState.DisplayMetrics.WindowWidth;
+        Config.Height = AppState.DisplayMetrics.WindowHeight;
         Config.hWnd = AppState.hWnd;
         
         SetupDirectX(&DirectXState, &Config);
@@ -134,6 +127,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     directwrite_state DirectWriteState;
     InitDirectWrite(&DirectXState, &DirectWriteState);
     
+    
+    //
+    // Init game
+    //
+    Init(&AppState.Renderer, 1 << 20, AppState.DisplayMetrics);
+    AppState.GameState.Renderer = &AppState.Renderer;
+    Init(&AppState.GameState);
     
     
     //
@@ -186,15 +186,47 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
         
         
         //
+        // Update
+        Update(&AppState.GameState, kFrameTime);
+        
+        
+        //
         // Rendering
         BeginRendering(&DirectXState);
         {
-            RenderFilledRectangle(&DirectXState, V2(100.0f, 100.0f), V2(100.0f, 100.0f), V4(1.0f, 0.0f, 0.0f, 1.0f));
+            for (u8 *CurrAddress = AppState.Renderer.Memory;
+                 CurrAddress < (AppState.Renderer.Memory + AppState.Renderer.MemoryUsed);
+                 )
+            {
+                draw_call_header *Header = reinterpret_cast<draw_call_header *>(CurrAddress);
+                
+                switch (Header->Type)
+                {
+                    case DrawCallType_FilledRectangle:
+                    {
+                        draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(CurrAddress);
+                        RenderFilledRectangle(&DirectXState, DrawCall->P, DrawCall->Size, DrawCall->Colour);
+                    } break;
+                    
+                    case DrawCallType_Text:
+                    {
+                        draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(CurrAddress);
+                        
+                        BeginDraw(&DirectWriteState);
+                        DrawText(&DirectWriteState, DrawCall->P, DrawCall->Text);
+                        EndDraw(&DirectWriteState);
+                    } break;
+                    
+                    default:
+                    {
+                        assert(0);
+                    } break;
+                }
+                
+                CurrAddress += Header->Size;
+            }
             
-            BeginDraw(&DirectWriteState);
-            DrawText(&DirectWriteState, L"Tjenare!", V2(300.0f, 300.0f));
-            EndDraw(&DirectWriteState);
-            
+            ClearMemory(&AppState.Renderer);
         }
         EndRendering(&DirectXState);
         
@@ -263,6 +295,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Clean up
     //
+    Shutdown(&AppState.GameState);
+    Shutdown(&AppState.Renderer);
+    
     ReleaseDirectWrite(&DirectWriteState);
     ReleaseDirectXState(&DirectXState);
     

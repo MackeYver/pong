@@ -35,7 +35,7 @@ static void UpdateMouseState(mouse_state *State)
     GetCursorPos(&Point);
     State->PrevP = State->P;
     State->P.x = (f32)Point.x;
-    State->P.y = (f32)(State->Metrics->ScreenHeight - Point.y - 1); // -1 due to being zero based
+    State->P.y = (f32)(State->DisplayMetrics->ScreenHeight - Point.y - 1); // -1 due to being zero based
 }
 
 
@@ -55,27 +55,21 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         
         case WM_KEYDOWN: 
         {
+            LONG_PTR Ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
+            app_state *State = reinterpret_cast<app_state *>(Ptr);
             
-#if 0
-            // Toggle the second light
-            if (wParam == 0x53) // S key
+            ++State->GameState.PressedKeys[(u8)wParam];
+        } break;
+        
+        case WM_KEYUP: 
+        {
+            LONG_PTR Ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
+            app_state *State = reinterpret_cast<app_state *>(Ptr);
+            
+            if (State->GameState.PressedKeys.count((u8)wParam) > 0)
             {
-                LONG_PTR Ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
-                app_state *State = reinterpret_cast<app_state *>(Ptr);
-                
-                State->UseSecondLight = !State->UseSecondLight;
-                
-                if (State->UseSecondLight)
-                {
-                    printf("The second light source is on.\n");
-                }
-                else
-                {
-                    printf("The second light source is off.\n");
-                }
+                State->GameState.PressedKeys.erase((u8)wParam);
             }
-#endif
-            
         } break;
         
         case WM_RBUTTONDOWN: 
@@ -139,8 +133,8 @@ static u32 CreateAppWindow(app_state *State, HINSTANCE hInstance, WNDPROC Window
     RECT Rect;
     Rect.left = 0;
     Rect.top = 0;
-    Rect.right = State->Metrics.WindowWidth;
-    Rect.bottom = State->Metrics.WindowHeight;
+    Rect.right = State->DisplayMetrics.WindowWidth;
+    Rect.bottom = State->DisplayMetrics.WindowHeight;
     AdjustWindowRect(&Rect, Style, false);
     
     if (!RegisterClass(&WC)) 

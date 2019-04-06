@@ -30,8 +30,8 @@
 //
 
 
-#ifndef Mathematics__h
-#define Mathematics__h
+#ifndef mathematics__h
+#define mathematics__h
 
 #include "types.h"
 #include <math.h>
@@ -119,6 +119,10 @@ union v2 {
         f32 x;
         f32 y;
     };
+    struct {
+        f32 Min;
+        f32 Max;
+    };
     f32 E[2];
 };
 
@@ -191,7 +195,7 @@ inline v2 operator - (v2 const& A) {
 }
 
 inline v2 Perp(v2 const& A) {
-    v2 Result = V2(-A.y, A.x);
+    v2 Result = V2(A.y, -A.x);
     return Result;
 }
 
@@ -367,6 +371,11 @@ inline v4 V4(f32 x, f32 y, f32 z, f32 w) {
     {
         x, y, z, w
     };
+    return Result;
+}
+
+inline v4 V4(v2 A, v2 B) {
+    v4 Result = V4(A.x, A.y, B.x, B.y);
     return Result;
 }
 

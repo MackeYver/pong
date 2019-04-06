@@ -22,8 +22,8 @@
 // SOFTWARE.
 //
 
-#ifndef Types__h
-#define Types__h
+#ifndef types__h
+#define types__h
 
 #include <stdint.h>
 #include <float.h>

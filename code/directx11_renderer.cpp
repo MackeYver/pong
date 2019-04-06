@@ -1314,12 +1314,12 @@ b32 InitDirectWrite(directx_state *DirectXState, directwrite_state *State)
         return false;
     }
     
-    Result = DWriteFactory->CreateTextFormat(L"Microsoft New Tai Lue",
+    Result = DWriteFactory->CreateTextFormat(L"Bahnschrift", //L"Microsoft New Tai Lue",
                                              nullptr,
                                              DWRITE_FONT_WEIGHT_NORMAL,
                                              DWRITE_FONT_STYLE_NORMAL,
                                              DWRITE_FONT_STRETCH_NORMAL,
-                                             96.0f/5.0f,
+                                             96.0f / 2.0f,
                                              L"en-GB",
                                              &State->TextFormat);
     if (FAILED(Result))
@@ -1377,7 +1377,7 @@ HRESULT EndDraw(directwrite_state *State)
 }
 
 
-void DrawTextW(directwrite_state *State, WCHAR const *String, v2 P)
+void DrawTextW(directwrite_state *State, v2 P, wchar_t const *String)
 {
     assert(State && State->DeviceContext);
     assert(String);
