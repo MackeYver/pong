@@ -913,12 +913,15 @@ void DetectAndResolveCollisions(game_state *State, f32 dt)
                     
                     //
                     // Calculate forces due to the collision
-                    v2 N = Collision.N;
-                    v2 Va = Body[0]->dP;
-                    v2 Vb = Body[1]->dP;
-                    
-                    Body[0]->dP = Coeff * Hadamard(dPMaska, -2.0f * Dot(N, Va)*N + Va);
-                    Body[1]->dP = Coeff * Hadamard(dPMaskb, -2.0f * Dot(N, Vb)*N + Vb);
+                    if (!(APlayerIsInvolved && ABorderIsInvolved)) // No forces applied in this scenario!
+                    {
+                        v2 N = Collision.N;
+                        v2 Va = Body[0]->dP;
+                        v2 Vb = Body[1]->dP;
+                        
+                        Body[0]->dP = Coeff * Hadamard(dPMaska, -2.0f * Dot(N, Va)*N + Va);
+                        Body[1]->dP = Coeff * Hadamard(dPMaskb, -2.0f * Dot(N, Vb)*N + Vb);
+                    }
                 }
             }
         }
