@@ -68,7 +68,7 @@ REM ----------------------------------------------------------------------------
 REM Linker Options
 REM https://docs.microsoft.com/en-us/cpp/build/reference/linker-options?view=vs-2017
 
-SET LinkerLibs=user32.lib d3d11.lib dxgi.lib dxguid.lib dwrite.lib d2d1.lib
+SET LinkerLibs=user32.lib d3d11.lib dxgi.lib dxguid.lib dwrite.lib d2d1.lib Xaudio2.lib ole32.lib
 REM Temp: gdi32.lib winmm.lib kernel32.lib
 
 IF %BuildMode%=="release" (

@@ -26,7 +26,6 @@
 #define STRICT
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <windowsx.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -36,10 +35,10 @@
 #include "directX11_renderer.h"
 #include "renderer.h"
 #include "game_main.h"
+#include "xaudio.h"
 
 constexpr f32 kFrameTime = 1.0f / 60.0f;
 constexpr f32 kFrameTimeMicroSeconds = 1000000.0f * kFrameTime;
-
 
 struct mouse_state
 {
@@ -57,18 +56,21 @@ struct app_state
     display_metrics DisplayMetrics;
     HWND hWnd;
     
+    xaudio XAudio;
+    
     renderer Renderer;
     game_state GameState;
 };
-
 
 #include "win32_utilities.h"
 
 
 
+
 //
-// MAIN
+// Main
 //
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine, int nShowCmd) 
 {
     //
@@ -106,6 +108,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     }
     
     
+    
     //
     // Init DirectX 10
     //
@@ -119,6 +122,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
         SetupDirectX(&DirectXState, &Config);
     }
     
+    
+    //
+    // XAudio
+    //
+    {
+        HRESULT Result = CoInitializeEx(0, COINIT_MULTITHREADED);
+        if (FAILED(Result))
+        {
+            assert(0);
+        }
+        
+        Init(&AppState.XAudio);
+        AppState.GameState.Audio.AudioSystem = (void *)&AppState.XAudio;
+        AppState.GameState.Audio._Play = &Play;
+        AppState.GameState.Audio._Stop = &Stop;
+    }
     
     
     //
@@ -139,8 +158,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Show and update window
     //
-    ShowWindow(AppState.hWnd, nShowCmd);
-    UpdateWindow(AppState.hWnd);
+    {
+        ShowWindow(AppState.hWnd, nShowCmd);
+        UpdateWindow(AppState.hWnd);
+    }
     
     
     
@@ -298,6 +319,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     Shutdown(&AppState.GameState);
     Shutdown(&AppState.Renderer);
     
+    CoUninitialize();
+    Shutdown(&AppState.XAudio);
+    
     ReleaseDirectWrite(&DirectWriteState);
     ReleaseDirectXState(&DirectXState);
     
@@ -318,3 +342,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     return msg.wParam;
 }
+
+
+
+
+//
+// Audio stuff
+// @debug

@@ -26,6 +26,7 @@
 #define game_main__h
 
 #include "renderer.h"
+#include "audio.h"
 #include <vector>
 #include <map>
 
@@ -100,6 +101,8 @@ enum game_mode
 struct game_state
 {
     renderer *Renderer = nullptr;
+    
+    audio Audio;
     
     std::map<u8, u8> PressedKeys;
     

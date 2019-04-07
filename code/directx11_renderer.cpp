@@ -795,8 +795,8 @@ b32 SetupDirectX(directx_state *State, directx_config *Config)
     // Basic shader (no texture or lighting)
     D3D11_INPUT_ELEMENT_DESC E = {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0};
     
-    CreateShader(State, "..\\build\\shaders\\vbasic.cso", &E, 1, &State->vBasic);
-    CreateShader(State, "..\\build\\shaders\\pbasic.cso", &State->pBasic);
+    CreateShader(State, "build\\shaders\\vbasic.cso", &E, 1, &State->vBasic);
+    CreateShader(State, "build\\shaders\\pbasic.cso", &State->pBasic);
     
     
     //
@@ -806,8 +806,8 @@ b32 SetupDirectX(directx_state *State, directx_config *Config)
         {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
-    CreateShader(State, "..\\build\\shaders\\vfullscreen_texture.cso", Es, 2, &State->vFullscreenTexture);
-    CreateShader(State, "..\\build\\shaders\\pfullscreen_texture.cso", &State->pFullscreenTexture);
+    CreateShader(State, "build\\shaders\\vfullscreen_texture.cso", Es, 2, &State->vFullscreenTexture);
+    CreateShader(State, "build\\shaders\\pfullscreen_texture.cso", &State->pFullscreenTexture);
     
     //
     // Sampler

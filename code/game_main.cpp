@@ -55,7 +55,7 @@ void End(game_state *State);
 
 //
 // Misc. (will be moved)
-// TODO(Marcus): Move the functins below...
+// TODO(Marcus): Move the functions below...
 // 
 
 u32 NewRectangleBody(game_state *State, v2 Size)
@@ -97,7 +97,7 @@ void Reset(game_state *State)
     
     //
     // Ball
-    v2 SpeedLimit = V2(600.0f, 600.0f);
+    v2 SpeedLimit = V2(1000.0f, 1000.0f);
     
     f32 BallRadius = 25.0f;
     f32 BallArea = Pi32 * BallRadius * BallRadius;
@@ -159,6 +159,8 @@ void Init(game_state *State)
     assert(State);
     assert(State->Renderer);
     
+    State->GameMode = GameMode_Inactive;
+    State->Audio.Play(Audio_Theme);
     
     //
     // Game state
@@ -236,6 +238,7 @@ void Init(game_state *State)
 void Shutdown(game_state *State)
 {
     assert(State);
+    State->Audio.StopAll();
 }
 
 
@@ -320,6 +323,8 @@ void Start(game_state *State)
 {
     assert(State);
     
+    State->Audio.Stop(Audio_Theme);
+    
     Reset(State);
     State->GameMode = GameMode_Playing;
     
@@ -330,6 +335,8 @@ void Start(game_state *State)
 void NewGame(game_state *State)
 {
     assert(State);
+    
+    State->Audio.Stop(Audio_Theme);
     
     Reset(State);
     State->GameMode = GameMode_Playing;
@@ -343,6 +350,8 @@ void NewGame(game_state *State)
 
 void Score(game_state *State, u32 ScoringPlayerIndex)
 {
+    State->Audio.Play(Audio_Score);
+    
     State->GameMode = GameMode_Scored;
     ++State->Players[ScoringPlayerIndex].Score;
     Reset(State);
@@ -362,6 +371,7 @@ void End(game_state *State)
     assert(State);
     
     State->GameMode = GameMode_Inactive;
+    State->Audio.Play(Audio_Theme);
 }
 
 
@@ -375,6 +385,7 @@ void RenderBodyAsRectangle(renderer *Renderer, body *Body, v4 Colour)
 {
     PushFilledRectangle(Renderer, Body->P, 2.0f*Body->Shape.HalfSize, Colour);
 }
+
 
 void RenderBodyAsCircle(renderer *Renderer, body *Body, v4 Colour)
 {
@@ -445,7 +456,7 @@ void Render(game_state *State)
         {
             PushText(State->Renderer, V2(0.5f * Width, 200.0f), L"Score!");
             PushText(State->Renderer, V2(0.5f * Width, 235.0f), L"------");
-            
+            PushText(State->Renderer, V2(0.5f * Width, 290.0f), L"Press P to resume");
         } break;
     }
 }
@@ -465,14 +476,12 @@ void ProcessInput(game_state *State)
         
         if (State->PressedKeys.count(0x31) > 0) // Key 1
         {
-            printf("1 pressed: %d!\n", State->PressedKeys.count(0x31));
             State->PressedKeys.erase(0x31);
             State->PlayerCount = 1;
         }
         
         if (State->PressedKeys.count(0x32) > 0) // Key 2
         {
-            printf("2 pressed: %d!\n", State->PressedKeys.count(0x32));
             State->PressedKeys.erase(0x32);
             State->PlayerCount = 2;
         }
@@ -484,9 +493,10 @@ void ProcessInput(game_state *State)
     }
     else if (State->GameMode == GameMode_Scored)
     {
-        if (State->PressedKeys.size() > 0)
+        if (State->PressedKeys.count(0x50) > 0) // P
         {
             State->GameMode = GameMode_Playing;
+            State->PressedKeys.erase(0x50);
             Start(State);
         }
     }
@@ -505,6 +515,7 @@ void ProcessInput(game_state *State)
             State->PressedKeys.erase(0x52);
             Reset(State);
             State->GameMode = GameMode_Inactive;
+            State->Audio.Play(Audio_Theme);
         }
         
         if (State->GameMode == GameMode_Playing)
@@ -822,37 +833,92 @@ void DetectAndResolveCollisions(game_state *State, f32 dt)
         {
             assert(IndexA != IndexB);
             
-            body *BodyA = &State->Bodies[IndexA];
-            body *BodyB = &State->Bodies[IndexB];
+            body *Body[2];
+            Body[0] = &State->Bodies[IndexA];
+            Body[1] = &State->Bodies[IndexB];
             
             collision_info Collision;
-            if (Intersects(BodyA, BodyB, &Collision))
+            if (Intersects(Body[0], Body[1], &Collision))
             {
-                f32 TotalInverseMass = BodyA->InverseMass + BodyB->InverseMass;
+                f32 TotalInverseMass = Body[0]->InverseMass + Body[1]->InverseMass;
                 if (!AlmostEqualRelative(TotalInverseMass, 0.0f))
                 {
                     // 
                     // Interpenetration
-                    f32 AShare = BodyA->InverseMass / TotalInverseMass;
+                    f32 AShare = Body[0]->InverseMass / TotalInverseMass;
                     
                     f32 dP = Collision.Depth + 0.001f; // Nudge it a bit further so that it is not colliding anymore
                     f32 dPa = AShare * dP;
                     f32 dPb = dP - dPa;
                     
-                    v2 dPMaska = BodyA->dPMask;
-                    v2 dPMaskb = BodyB->dPMask;
+                    v2 dPMaska = Body[0]->dPMask;
+                    v2 dPMaskb = Body[1]->dPMask;
                     
-                    BodyA->P += Hadamard(dPMaska, dPa * -Collision.N);
-                    BodyB->P += Hadamard(dPMaskb, dPb *  Collision.N);
+                    Body[0]->P += Hadamard(dPMaska, dPa * -Collision.N);
+                    Body[1]->P += Hadamard(dPMaskb, dPb *  Collision.N);
                     
                     
                     //
-                    // Resolve collision (by changing the velocity, a.k.a. dPt)
-                    v2 N = Collision.N;
-                    v2 Va = BodyA->dP;
-                    v2 Vb = BodyB->dP;
+                    // Resolve collision (by changing the velocity, a.k.a. dP)
+                    body *BallBody = &State->Bodies[State->Ball.BodyIndex];
+                    body *PlayerBody[2];
+                    PlayerBody[0] = &State->Bodies[State->Players[0].BodyIndex];
+                    PlayerBody[1] = &State->Bodies[State->Players[1].BodyIndex];
                     
-                    BodyA->dP = Hadamard(dPMaska, -2.0f * Dot(N, Va)*N + Va);BodyB->dP = Hadamard(dPMaskb, -2.0f * Dot(N, Vb)*N + Vb);
+                    body *BorderBody[2];
+                    BorderBody[0] = &State->Bodies[State->Borders[0].BodyIndex];
+                    BorderBody[1] = &State->Bodies[State->Borders[1].BodyIndex];
+                    
+                    
+                    //
+                    // Will be used in order to determine if we shall play any sounds
+                    b32 TheBallIsInvolved = false;
+                    b32 ABorderIsInvolved = false;
+                    b32 APlayerIsInvolved = false;
+                    
+                    
+                    //
+                    // Check what entities were involved in the collision
+                    for (u32 Index = 0; Index < 2; ++Index)
+                    {
+                        if ((Body[Index] == PlayerBody[0]) || (Body[Index] == PlayerBody[1]))
+                        {
+                            APlayerIsInvolved = true;
+                        }
+                        else if ((Body[Index] == BallBody) || (Body[Index] == BallBody))
+                        {
+                            TheBallIsInvolved = true;
+                        }
+                        else if ((Body[Index] == BorderBody[0]) || (Body[Index] == BorderBody[1]))
+                        {
+                            ABorderIsInvolved = true;
+                        }
+                    }
+                    
+                    f32 Coeff = 1.0f;
+                    
+                    //
+                    // Play sounds
+                    if (TheBallIsInvolved && APlayerIsInvolved)
+                    {
+                        State->Audio.Play(Audio_PaddleBounce);
+                        Coeff = 1.25f;
+                    }
+                    else if (TheBallIsInvolved && ABorderIsInvolved)
+                    {
+                        State->Audio.Play(Audio_BorderBounce);
+                        Coeff = 0.95f;
+                    }
+                    
+                    
+                    //
+                    // Calculate forces due to the collision
+                    v2 N = Collision.N;
+                    v2 Va = Body[0]->dP;
+                    v2 Vb = Body[1]->dP;
+                    
+                    Body[0]->dP = Coeff * Hadamard(dPMaska, -2.0f * Dot(N, Va)*N + Va);
+                    Body[1]->dP = Coeff * Hadamard(dPMaskb, -2.0f * Dot(N, Vb)*N + Vb);
                 }
             }
         }
