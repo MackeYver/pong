@@ -44,6 +44,7 @@ enum wav_type
     WavType_Count,
 };
 
+
 struct wav_format
 {
     u16 Compression;
@@ -54,6 +55,7 @@ struct wav_format
     u16 SignificantBitsPerSample;
     u16 ExtraFormatBytes;
 };
+
 
 struct wav_data
 {

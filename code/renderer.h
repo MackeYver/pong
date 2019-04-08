@@ -28,10 +28,10 @@
 #include "mathematics.h"
 
 
-
 //
-// Main
-// 
+// Renderer
+//
+
 struct display_metrics
 {
     u32 WindowWidth;
@@ -40,6 +40,7 @@ struct display_metrics
     u32 ScreenWidth;
     u32 ScreenHeight;
 };
+
 
 struct renderer
 {
@@ -56,9 +57,11 @@ void Shutdown(renderer *Renderer);
 
 
 
+
 //
 // Draw call structs
 //
+
 enum draw_call_type
 {
     DrawCallType_FilledRectangle = 0,
@@ -88,13 +91,9 @@ struct draw_call_text
     v2 P;
 };
 
-
-
-//
-// Draw calls
-//
 void PushFilledRectangle(renderer *Renderer, v2 P, v2 Size, v4 Colour = v4_one);
 void PushText(renderer *Renderer, v2 P, wchar_t const *Text); 
+
 
 
 #endif // Include guard

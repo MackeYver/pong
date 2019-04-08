@@ -26,40 +26,46 @@
 #ifndef audio__h
 #define audio__h
 
-enum audio_sample_id
-{
-    Audio_Theme = 0,
-    Audio_PaddleBounce,
-    Audio_BorderBounce,
-    Audio_Score,
-    
-    Audio_Count
-};
+
+//
+// NOTE(Marcus): First steps towards a platform agnostic audio layer
+//
+
+
+typedef s32 voice_index;
+
 
 struct audio
 {
-    void Play(audio_sample_id SampleID)
+    void Play(voice_index Index)
     {
-        _Play(AudioSystem, SampleID);
+        _Play(AudioSystem, Index);
     }
     
-    void Stop(audio_sample_id SampleID)
+    void Stop(voice_index Index)
     {
-        _Stop(AudioSystem, SampleID);
+        _Stop(AudioSystem, Index);
     }
     
     void StopAll()
     {
-        for (u32 Index = 0; Index < Audio_Count; ++Index)
-        {
-            Stop((audio_sample_id)Index);
-        }
+        _StopAll(AudioSystem);
     }
     
-    void (*_Play)(void *, audio_sample_id);
-    void (*_Stop)(void *, audio_sample_id);
+    voice_index Load(char const *PathAndFilename)
+    {
+        voice_index Result = _Load(AudioSystem, PathAndFilename);
+        return Result;
+    }
+    
+    void (*_Play)(void *, voice_index);
+    void (*_Stop)(void *, voice_index);
+    void (*_StopAll)(void *);
+    voice_index (*_Load)(void *, char const *PathAndFilename);
     
     void *AudioSystem;
 };
+
+
 
 #endif

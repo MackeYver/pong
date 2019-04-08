@@ -27,65 +27,51 @@
 
 #include "renderer.h"
 #include "audio.h"
+#include "dynamics.h"
 #include <vector>
 #include <map>
 
 
 
-enum shape_type
-{
-    ShapeType_rectangle,
-    ShapeType_circle,
-    
-    ShapeType_count,
-};
-
-struct body;
-
-struct shape
-{
-    s32 BodyIndex = -1;
-    union
-    {
-        v2 HalfSize = V2(1.0f, 1.0f);
-        f32 Radius;
-    };
-    shape_type Type = ShapeType_rectangle;
-};
-
-struct body
-{
-    shape Shape;
-    
-    v2 P = v2_zero;
-    v2 PrevP = v2_zero;
-    
-    v2 dP = v2_zero;
-    v2 dPMax = V2(f32Max, f32Max);
-    v2 dPMask = v2_one;
-    
-    v2 F = v2_zero;
-    f32 Damping = 0.0f;
-    f32 InverseMass = 1.0f;
-};
+//
+// Entites
+//
 
 struct player
 {
-    s32 BodyIndex = -1;
+    body_index BodyIndex = -1;
     v4 Colour = v4_one;
     u32 Score = 0;
 };
 
+
 struct ball
 {
-    s32 BodyIndex = -1;
+    body_index BodyIndex = -1;
     v4 Colour = v4_one;
 };
 
+
 struct border
 {
-    s32 BodyIndex = -1;
+    body_index BodyIndex = -1;
     v4 Colour = v4_one;
+};
+
+
+
+//
+// Game stuff
+//
+
+enum audio_voice_indices // @debug
+{
+    AudioVoice_Theme = 0,
+    AudioVoice_PaddleBounce,
+    AudioVoice_BorderBounce,
+    AudioVoice_Score,
+    
+    AudioVoice_Count
 };
 
 enum game_mode
@@ -103,10 +89,12 @@ struct game_state
     renderer *Renderer = nullptr;
     
     audio Audio;
+    voice_index AudioVoices[AudioVoice_Count];
     
-    std::map<u8, u8> PressedKeys;
+    std::map<u8, u8> PressedKeys; // TODO(Marcus): Implement proper input handling and processing.
     
-    std::vector<body> Bodies;
+    dynamics_state Dynamics;
+    
     player Players[2];
     border Borders[2];
     ball Ball;

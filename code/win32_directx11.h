@@ -23,8 +23,8 @@
 //
 
 
-#ifndef directX11_renderer__h
-#define directX11_renderer__h
+#ifndef win32_directX11__h
+#define win32_directX11__h
 
 #include <d3d11.h>
 #include <dxgi.h>

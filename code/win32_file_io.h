@@ -28,9 +28,9 @@
 #include "types.h"
 
 
-
 //
-// File reading using the win32 API.
+// File reading using the win32 API. Reads the entire file into memory that Data is pointing to.
+// Uses malloc, you will need to free Data.
 b32 win32_ReadFile(char const *PathAndName, u8 **Data, size_t *DataSize);
 
 

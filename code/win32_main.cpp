@@ -32,10 +32,11 @@
 
 #include "types.h"
 #include "mathematics.h"
-#include "directX11_renderer.h"
+#include "win32_directX11.h"
+#include "win32_xaudio.h"
 #include "renderer.h"
 #include "game_main.h"
-#include "xaudio.h"
+
 
 constexpr f32 kFrameTime = 1.0f / 60.0f;
 constexpr f32 kFrameTimeMicroSeconds = 1000000.0f * kFrameTime;
@@ -86,13 +87,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Initial state
     app_state AppState;
-    AppState.DisplayMetrics.WindowWidth = 1920;
+    AppState.DisplayMetrics.WindowWidth  = 1920;
     AppState.DisplayMetrics.WindowHeight = 1080;
     AppState.DisplayMetrics.ScreenWidth  = GetSystemMetrics(SM_CXSCREEN);
     AppState.DisplayMetrics.ScreenHeight = GetSystemMetrics(SM_CYSCREEN);
     
     AppState.MouseState.DisplayMetrics = &AppState.DisplayMetrics;
     
+    
+    //
+    // XAudio
+    //
+    {
+        HRESULT Result = CoInitializeEx(0, COINIT_MULTITHREADED);
+        if (FAILED(Result))
+        {
+            assert(0);
+        }
+        
+        Init(&AppState.XAudio);
+        AppState.GameState.Audio.AudioSystem = (void *)&AppState.XAudio;
+        AppState.GameState.Audio._Play = &Play;
+        AppState.GameState.Audio._Stop = &Stop;
+        AppState.GameState.Audio._StopAll = &StopAll;
+        AppState.GameState.Audio._Load = &Load;
+    }
     
     
     //
@@ -123,28 +142,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     }
     
     
-    //
-    // XAudio
-    //
-    {
-        HRESULT Result = CoInitializeEx(0, COINIT_MULTITHREADED);
-        if (FAILED(Result))
-        {
-            assert(0);
-        }
-        
-        Init(&AppState.XAudio);
-        AppState.GameState.Audio.AudioSystem = (void *)&AppState.XAudio;
-        AppState.GameState.Audio._Play = &Play;
-        AppState.GameState.Audio._Stop = &Stop;
-    }
-    
     
     //
     // DirectWrite
     //
     directwrite_state DirectWriteState;
     InitDirectWrite(&DirectXState, &DirectWriteState);
+    
     
     
     //
@@ -155,13 +159,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     Init(&AppState.GameState);
     
     
+    
     //
     // Show and update window
     //
-    {
-        ShowWindow(AppState.hWnd, nShowCmd);
-        UpdateWindow(AppState.hWnd);
-    }
+    ShowWindow(AppState.hWnd, nShowCmd);
+    UpdateWindow(AppState.hWnd);
     
     
     

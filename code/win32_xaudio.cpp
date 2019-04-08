@@ -22,7 +22,7 @@
 // SOFTWARE.
 //
 
-#include "xaudio.h"
+#include "win32_xaudio.h"
 
 #ifdef DEBUG
 #include <assert.h>
@@ -36,7 +36,7 @@
 //
 // Forward declarations
 //
-void SubmitSourceBuffer(xaudio_voice *Voice);
+//void SubmitSourceBuffer(xaudio_voice *Voice);
 
 
 
@@ -69,6 +69,7 @@ void Init(xaudio *XAudio)
     }
     
     
+#if 0
     char const *FilenameAndPath[] = 
     {
         "data\\theme.wav",
@@ -126,11 +127,95 @@ void Init(xaudio *XAudio)
             {
                 Voice->ShouldLoop = true;
             }
-            //SubmitSourceBuffer(Voice);
         }
     }
+#endif
 }
 
+
+voice_index Load(void *X, char const *PathAndFilename)
+{
+    xaudio *XAudio = (xaudio *)X;
+    
+    voice_index Result = -1;
+    
+    u8 *Data = nullptr;
+    size_t DataSize;
+    
+    if (win32_ReadFile(PathAndFilename, &Data, &DataSize))
+    {
+        xaudio_voice NewVoice;
+        XAudio->Voices.push_back(NewVoice);
+        xaudio_voice *Voice = &XAudio->Voices.back();
+        
+        wav_data *WavDataPtr = &Voice->WavData;
+        b32 ParseResult = ParseWav(Data, DataSize, WavDataPtr);
+        assert(ParseResult);
+        
+        if (Data)
+        {
+            free(Data);
+            Data = nullptr;
+            DataSize = 0;
+        }
+        
+        tWAVEFORMATEX Format;
+        Format.wFormatTag      = WAVE_FORMAT_PCM;
+        Format.nChannels       = WavDataPtr->Format.NumberOfChannels;
+        Format.nSamplesPerSec  = WavDataPtr->Format.SampleRate;
+        Format.nAvgBytesPerSec = WavDataPtr->Format.AverageBytesPerSecond;
+        Format.nBlockAlign     = WavDataPtr->Format.BlockAlign;
+        Format.wBitsPerSample  = WavDataPtr->Format.SignificantBitsPerSample;
+        Format.cbSize = 0;
+        
+        Result = XAudio->Device->CreateSourceVoice(&Voice->SourceVoice, (WAVEFORMATEX*)&Format);
+        if (FAILED(Result))
+        {
+            assert(0);
+        }
+        
+#if 0
+        if (Index == (u32)Audio_Theme)
+        {
+            Voice->ShouldLoop = true;
+        }
+#endif
+        
+        Result = XAudio->Voices.size() - 1;
+    }
+    
+    return Result;
+}
+
+
+void Shutdown(xaudio *XAudio)
+{
+#if 0
+    for (u32 Index = 0; Index < Audio_Count; ++Index)
+    {
+        xaudio_voice *Voice = &XAudio->Voices[Index];
+        Voice->SourceVoice->Stop();
+        Voice->SourceVoice->DestroyVoice();
+        FreeWavData(&Voice->WavData);
+    }
+#endif
+    
+    for (auto& Voice : XAudio->Voices)
+    {
+        Voice.SourceVoice->Stop();
+        Voice.SourceVoice->DestroyVoice();
+        FreeWavData(&Voice.WavData);
+    }
+    
+    XAudio->MasteringVoice->DestroyVoice();
+    XAudio->Device->Release();
+}
+
+
+
+//
+// Play and stop functions
+// 
 
 void SubmitSourceBuffer(xaudio_voice *Voice)
 {
@@ -154,36 +239,42 @@ void SubmitSourceBuffer(xaudio_voice *Voice)
 }
 
 
-void Shutdown(xaudio *XAudio)
+//
+// xaudio
+void Play(void *AudioSystem, voice_index Index)
 {
-    for (u32 Index = 0; Index < Audio_Count; ++Index)
+    xaudio *XAudio = (xaudio *)AudioSystem; // Crazy-bananas!
+    if ((Index >= 0) && ((u32)Index < XAudio->Voices.size()))
     {
-        xaudio_voice *Voice = &XAudio->Voices[Index];
-        Voice->SourceVoice->Stop();
-        Voice->SourceVoice->DestroyVoice();
-        FreeWavData(&Voice->WavData);
+        Play(&XAudio->Voices[Index]);
     }
-    
-    XAudio->MasteringVoice->DestroyVoice();
-    XAudio->Device->Release();
 }
 
 
+void Stop(void *AudioSystem, voice_index Index)
+{
+    xaudio *XAudio = (xaudio *)AudioSystem; // BANANAS!
+    if ((Index >= 0) && ((u32)Index < XAudio->Voices.size()))
+    {
+        Stop(&XAudio->Voices[Index]);
+    }
+}
+
+
+void StopAll(void *AudioSystem)
+{
+    xaudio *XAudio = (xaudio *)AudioSystem;
+    for (std::vector<xaudio_voice>::size_type Index = 0; 
+         Index < XAudio->Voices.size(); 
+         ++Index)
+    {
+        Stop(&XAudio->Voices[Index]);
+    }
+}
 
 
 //
-// Start and stop
-// 
-
-void Play(void *AudioSystem, audio_sample_id SampleID)
-{
-    xaudio *XAudio = (xaudio *)AudioSystem; // Crazy-bananas!
-    if (SampleID < Audio_Count)
-    {
-        Play(&XAudio->Voices[(u32)SampleID]);
-    }
-}
-
+// xaudio_voice
 void Play(xaudio_voice *Voice)
 {
     // TODO(Marcus): Find out if we really need to submit the source buffer evertime!
@@ -191,15 +282,6 @@ void Play(xaudio_voice *Voice)
     Voice->SourceVoice->Start();
 }
 
-
-void Stop(void *AudioSystem, audio_sample_id SampleID)
-{
-    xaudio *XAudio = (xaudio *)AudioSystem; // BANANAS!
-    if (SampleID < Audio_Count)
-    {
-        Stop(&XAudio->Voices[(u32)SampleID]);
-    }
-}
 
 void Stop(xaudio_voice *Voice)
 {

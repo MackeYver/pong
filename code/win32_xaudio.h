@@ -23,10 +23,11 @@
 //
 
 
-#ifndef xaudio__h
-#define xaudio__h
+#ifndef win32_xaudio__h
+#define win32_xaudio__h
 
 #include <xaudio2.h>
+#include <vector> //@debug
 
 #include "win32_file_io.h"
 #include "audio.h"
@@ -54,14 +55,17 @@ struct xaudio
 {
     IXAudio2 *Device = nullptr;
     IXAudio2MasteringVoice *MasteringVoice = nullptr;
-    xaudio_voice Voices[Audio_Count];
+    std::vector<xaudio_voice> Voices;
 };
 
 void Init(xaudio *XAudio);
 void Shutdown(xaudio *XAudio);
 
-void Play(void *XAudio, audio_sample_id SampleID);
-void Stop(void *XAudio, audio_sample_id SampleID);
+voice_index Load(void *XAudio, char const *PathAndFilename);
+
+void Play(void *XAudio, voice_index Index);
+void Stop(void *XAudio, voice_index Index);
+void StopAll(void *XAudio);
 
 
 #endif
