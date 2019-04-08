@@ -66,6 +66,9 @@ void Init(game_state *State)
     //
     // Audio
     {
+        audio *Audio = &State->Audio;
+        Audio->Init();
+        
         char const *PathAndFilename[] = 
         {
             "data\\theme.wav",
@@ -73,8 +76,6 @@ void Init(game_state *State)
             "data\\border_bounce.wav",
             "data\\score.wav",
         };
-        
-        audio *Audio = &State->Audio;
         
         for (u32 Index = 0; Index < AudioVoice_Count; ++Index)
         {
@@ -293,7 +294,7 @@ void Shutdown(game_state *State)
     assert(State);
     
     Shutdown(&State->Dynamics);
-    State->Audio.StopAll();
+    State->Audio.Shutdown();
 }
 
 

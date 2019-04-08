@@ -37,6 +37,15 @@ typedef s32 voice_index;
 
 struct audio
 {
+    void Init()
+    {
+    }
+    
+    void Shutdown()
+    {
+        StopAll();
+    }
+    
     void Play(voice_index Index)
     {
         _Play(AudioSystem, Index);

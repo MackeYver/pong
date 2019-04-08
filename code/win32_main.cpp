@@ -32,14 +32,22 @@
 
 #include "types.h"
 #include "mathematics.h"
-#include "win32_directX11.h"
+
 #include "win32_xaudio.h"
+#include "win32_dx.h"
 #include "renderer.h"
+
 #include "game_main.h"
 
 
-constexpr f32 kFrameTime = 1.0f / 60.0f;
-constexpr f32 kFrameTimeMicroSeconds = 1000000.0f * kFrameTime;
+f32 constexpr kFrameTime = 1.0f / 60.0f;
+f32 constexpr kFrameTimeMicroSeconds = 1000000.0f * kFrameTime;
+
+
+
+//
+// Structs
+//
 
 struct mouse_state
 {
@@ -51,6 +59,7 @@ struct mouse_state
     b32 RBDown;
 };
 
+
 struct app_state
 {
     mouse_state MouseState;
@@ -58,6 +67,7 @@ struct app_state
     HWND hWnd;
     
     xaudio XAudio;
+    dx_state DirectX;
     
     renderer Renderer;
     game_state GameState;
@@ -131,14 +141,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Init DirectX 10
     //
-    directx_state DirectXState = {};
     {
-        directx_config Config;
-        Config.Width = AppState.DisplayMetrics.WindowWidth;
-        Config.Height = AppState.DisplayMetrics.WindowHeight;
-        Config.hWnd = AppState.hWnd;
-        
-        SetupDirectX(&DirectXState, &Config);
+        b32 BoolResult = Init(&AppState.DirectX);
+        assert(BoolResult);
     }
     
     
@@ -146,8 +151,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // DirectWrite
     //
+#if 0
     directwrite_state DirectWriteState;
     InitDirectWrite(&DirectXState, &DirectWriteState);
+#endif
     
     
     
@@ -216,7 +223,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
         
         //
         // Rendering
-        BeginRendering(&DirectXState);
+        BeginRendering(&AppState.DirectX);
         {
             for (u8 *CurrAddress = AppState.Renderer.Memory;
                  CurrAddress < (AppState.Renderer.Memory + AppState.Renderer.MemoryUsed);
@@ -229,16 +236,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
                     case DrawCallType_FilledRectangle:
                     {
                         draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(CurrAddress);
-                        RenderFilledRectangle(&DirectXState, DrawCall->P, DrawCall->Size, DrawCall->Colour);
+                        DrawCall;
+                        //RenderFilledRectangle(&DirectXState, DrawCall->P, DrawCall->Size, DrawCall->Colour);
                     } break;
                     
                     case DrawCallType_Text:
                     {
                         draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(CurrAddress);
-                        
+                        DrawCall;
+#if 0
                         BeginDraw(&DirectWriteState);
                         DrawText(&DirectWriteState, DrawCall->P, DrawCall->Text);
                         EndDraw(&DirectWriteState);
+#endif
                     } break;
                     
                     default:
@@ -252,7 +262,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
             
             ClearMemory(&AppState.Renderer);
         }
-        EndRendering(&DirectXState);
+        EndRendering(&AppState.DirectX);
         
         
         //
@@ -325,8 +335,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     CoUninitialize();
     Shutdown(&AppState.XAudio);
     
-    ReleaseDirectWrite(&DirectWriteState);
-    ReleaseDirectXState(&DirectXState);
+    //ReleaseDirectWrite(&DirectWriteState);
+    //ReleaseDirectXState(&DirectXState);
+    Shutdown(&AppState.DirectX);
     
     
     

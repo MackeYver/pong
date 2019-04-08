@@ -49,7 +49,6 @@
 
 //
 // Vertex shader
-// TODO(Marcus): Pull out the input layout as well, currently this only allows one layout...
 b32 CreateShader(directx_state *State, const char *PathAndName, 
                  D3D11_INPUT_ELEMENT_DESC *InputElements, u32 ElementCount,
                  vertex_shader *Shader)
