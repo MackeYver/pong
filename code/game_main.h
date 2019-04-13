@@ -25,7 +25,7 @@
 #ifndef game_main__h
 #define game_main__h
 
-#include "renderer.h"
+#include "draw_calls.h"
 #include "audio.h"
 #include "dynamics.h"
 #include <vector>
@@ -86,7 +86,7 @@ enum game_mode
 
 struct game_state
 {
-    renderer *Renderer = nullptr;
+    draw_calls *DrawCalls = nullptr;
     
     audio Audio;
     voice_index AudioVoices[AudioVoice_Count];

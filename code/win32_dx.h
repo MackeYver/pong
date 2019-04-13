@@ -37,96 +37,84 @@
 #include <d2d1_1.h> // Direct2D    (D2d1_1.lib)
 
 #include "mathematics.h"
+#include "draw_calls.h"
 
 
-
-//
-// The structs are declared further down
-struct dx_state;
-struct shader_constants;
-
-
-b32 Init(dx_state *State);
-void Shutdown(dx_state *State);
-
-void BeginRendering(dx_state *State);
-void EndRendering(dx_state *State);
-
-
-
-
-//
-// Structs
-//
 
 struct shader_constants
 {
     m4 WorldToClip;
+    m4 ObjectToWorld;
     v4 Colour;
 };
 
 
 struct dx_state
 {
-    D3D11_VIEWPORT Viewport;
+    D3D11_VIEWPORT Viewport = {};
     
-    HWND hWnd;
+    HWND hWnd = nullptr;
     
     ID3D11Device *Device = nullptr;
     ID3D11DeviceContext *DeviceContext = nullptr;
     IDXGISwapChain *SwapChain = nullptr;
     ID3D11Texture2D *Backbuffer = nullptr;
     ID3D11RenderTargetView *BackbufferView = nullptr;
-    ID3D11RasterizerState *RasterizeState = nullptr;
-    
-    
-    //
-    // Shaders
-    //
+    ID3D11RasterizerState *RasterizerState = nullptr;
     
     //
     // Basic program (renders to RenderTargetTexture)
-    ID3D11InputLayout *ilBasic;
+    ID3D11InputLayout *ilBasic = nullptr;
     ID3D11VertexShader *vsBasic = nullptr;
     ID3D11PixelShader *psBasic = nullptr;
     
+    // @debug
+    ID3D11Buffer *VertexBufferRectangle = nullptr;
+    ID3D11Buffer *VertexBufferCircle = nullptr;
+    u32 VertexCountCircle = 0;
+    
     //
     // Fullscreen program (renders the RenderTargetTexture to a textured fullscreen quad)
-    ID3D11InputLayout *ilFullscreen;
+    ID3D11InputLayout *ilFullscreen = nullptr;
     ID3D11VertexShader *vsFullscreen = nullptr;
     ID3D11PixelShader *psFullscreen = nullptr;
     ID3D11Buffer *VertexBufferFullscreen = nullptr;
     
-    
     //
     // Samplers
-    ID3D11SamplerState *Sampler;
+    ID3D11SamplerState *Sampler = nullptr;
     
     //
     // Render target stuff
-    ID3D11Texture2D *RenderTargetTexture;
-    ID3D11RenderTargetView *RenderTargetView;
-    ID3D11ShaderResourceView *RenderTargetShaderView;
-    ID3D11Texture2D *DepthStencilTexture;
-    ID3D11DepthStencilView *DepthStencilView;
-    ID3D11DepthStencilState *DepthStencilState;
+    ID3D11Texture2D *RenderTargetTexture = nullptr; // MSAA texture
+    ID3D11RenderTargetView *RenderTargetView = nullptr;
+    ID3D11Texture2D *DepthStencilTexture = nullptr; // MSAA texture
+    ID3D11DepthStencilView *DepthStencilView = nullptr;
+    ID3D11DepthStencilState *DepthStencilState = nullptr;
     
-    //
-    // Rasterize state
-    ID3D11RasterizerState *RasterizerState;
+    ID3D11Texture2D *ResolveTexture = nullptr; // The result of the MSAA resolve from the RenderTargetTexture
+    ID3D11ShaderResourceView *ResolveShaderView = nullptr;
     
     //
     // Constant buffer
-    shader_constants ShaderConstants;
-    ID3D11Buffer *ShaderConstantsBuffer;
+    shader_constants ShaderConstants = {};
+    ID3D11Buffer *ShaderConstantsBuffer = nullptr;
     
     //
     // Config
-    v4 BackgroundColour = V4(0.2f, 0.2f, 0.3f, 1.0f);
+    v4 BackgroundColour = V4(0.1f, 0.2f, 0.3f, 1.0f);
     
     u32 Width = 1920;
     u32 Height = 1080;
 };
+
+
+b32 Init(dx_state *State, HWND hWnd);
+void Shutdown(dx_state *State);
+
+void UpdateConstantBuffer(dx_state *State, shader_constants *ShaderConstants);
+void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls);
+
 
 
 #endif

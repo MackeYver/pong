@@ -35,7 +35,7 @@
 
 #include "win32_xaudio.h"
 #include "win32_dx.h"
-#include "renderer.h"
+#include "draw_calls.h"
 
 #include "game_main.h"
 
@@ -67,9 +67,9 @@ struct app_state
     HWND hWnd;
     
     xaudio XAudio;
+    draw_calls DrawCalls;
     dx_state DirectX;
     
-    renderer Renderer;
     game_state GameState;
 };
 
@@ -86,7 +86,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 {
     //
     // Create and attach console
-    //
 #ifdef DEBUG
     FILE *FileStdOut;
     assert(AllocConsole());
@@ -94,8 +93,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 #endif
     
     
+    
     //
-    // Initial state
+    // Display metrics
+    //
+    
     app_state AppState;
     AppState.DisplayMetrics.WindowWidth  = 1920;
     AppState.DisplayMetrics.WindowHeight = 1080;
@@ -105,9 +107,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     AppState.MouseState.DisplayMetrics = &AppState.DisplayMetrics;
     
     
+    
     //
     // XAudio
     //
+    
     {
         HRESULT Result = CoInitializeEx(0, COINIT_MULTITHREADED);
         if (FAILED(Result))
@@ -124,9 +128,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     }
     
     
+    
     //
     // Create window
     //
+    
     {
         u32 Error = CreateAppWindow(&AppState, hInstance, WindowProc);
         if (Error)
@@ -142,7 +148,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     // Init DirectX 10
     //
     {
-        b32 BoolResult = Init(&AppState.DirectX);
+        b32 BoolResult = Init(&AppState.DirectX, AppState.hWnd);
         assert(BoolResult);
     }
     
@@ -151,6 +157,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // DirectWrite
     //
+    
 #if 0
     directwrite_state DirectWriteState;
     InitDirectWrite(&DirectXState, &DirectWriteState);
@@ -161,8 +168,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Init game
     //
-    Init(&AppState.Renderer, 1 << 20, AppState.DisplayMetrics);
-    AppState.GameState.Renderer = &AppState.Renderer;
+    
+    Init(&AppState.DrawCalls, 1 << 20, AppState.DisplayMetrics);
+    AppState.GameState.DrawCalls = &AppState.DrawCalls;
     Init(&AppState.GameState);
     
     
@@ -170,6 +178,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Show and update window
     //
+    
     ShowWindow(AppState.hWnd, nShowCmd);
     UpdateWindow(AppState.hWnd);
     
@@ -178,6 +187,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // Timing
     //
+    
     LARGE_INTEGER Frequency;
     QueryPerformanceFrequency(&Frequency); 
     
@@ -190,6 +200,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     // The main loop
     //
+    
     b32 ShouldRun = true;
     MSG msg;
     while (ShouldRun) 
@@ -210,60 +221,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
             }
         }
         
-        
         //
         // Input
         UpdateMouseState(&AppState.MouseState);
-        
         
         //
         // Update
         Update(&AppState.GameState, kFrameTime);
         
-        
         //
-        // Rendering
-        BeginRendering(&AppState.DirectX);
-        {
-            for (u8 *CurrAddress = AppState.Renderer.Memory;
-                 CurrAddress < (AppState.Renderer.Memory + AppState.Renderer.MemoryUsed);
-                 )
-            {
-                draw_call_header *Header = reinterpret_cast<draw_call_header *>(CurrAddress);
-                
-                switch (Header->Type)
-                {
-                    case DrawCallType_FilledRectangle:
-                    {
-                        draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(CurrAddress);
-                        DrawCall;
-                        //RenderFilledRectangle(&DirectXState, DrawCall->P, DrawCall->Size, DrawCall->Colour);
-                    } break;
-                    
-                    case DrawCallType_Text:
-                    {
-                        draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(CurrAddress);
-                        DrawCall;
-#if 0
-                        BeginDraw(&DirectWriteState);
-                        DrawText(&DirectWriteState, DrawCall->P, DrawCall->Text);
-                        EndDraw(&DirectWriteState);
-#endif
-                    } break;
-                    
-                    default:
-                    {
-                        assert(0);
-                    } break;
-                }
-                
-                CurrAddress += Header->Size;
-            }
-            
-            ClearMemory(&AppState.Renderer);
-        }
-        EndRendering(&AppState.DirectX);
-        
+        // Process draw calls
+        ProcessDrawCalls(&AppState.DirectX, &AppState.DrawCalls);
         
         //
         // Timing
@@ -296,10 +264,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     
     
-    
     //
     // @debug
     //
+    
 #ifdef DEBUG
     IDXGIDebug *DebugInterface;
     {
@@ -325,12 +293,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     
     
-    
     //
     // Clean up
     //
+    
     Shutdown(&AppState.GameState);
-    Shutdown(&AppState.Renderer);
+    Shutdown(&AppState.DrawCalls);
     
     CoUninitialize();
     Shutdown(&AppState.XAudio);
@@ -356,10 +324,3 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     return msg.wParam;
 }
-
-
-
-
-//
-// Audio stuff
-// @debug

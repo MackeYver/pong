@@ -877,10 +877,12 @@ inline m4 M4Perspective(f32 const Fovx, f32 const AspectRatio, f32 const Near, f
 
 
 // @debug
+#ifndef assert
 #ifdef DEBUG
 #include <assert.h>
 #else
 #define assert(x)
+#endif
 #endif
 
 inline m4 M4LookAt(v3 const CameraP, v3 const LookAtP) // TODO(Marcus): Sloooow!

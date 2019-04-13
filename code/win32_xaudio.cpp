@@ -28,7 +28,7 @@
 #include <assert.h>
 #include <stdio.h>
 #else
-#define assert(x)
+#define assert(x) x
 #define printf(...)
 #endif
 

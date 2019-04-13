@@ -37,7 +37,7 @@
 #include <stdio.h>
 #include <assert.h>
 #else
-#define printf(x)
+#define printf(...)
 #define assert(x)
 #endif
 
@@ -61,8 +61,10 @@ b32 win32_ReadFile(char const *PathAndName, u8 **Data, size_t *DataSize)
                               nullptr);
     if (File == INVALID_HANDLE_VALUE)
     {
+#ifdef DEBUG
         DWORD Error = GetLastError();
         printf("Failed to open file, error: %d\n", Error);
+#endif
         return false;
     }
     
@@ -83,8 +85,12 @@ b32 win32_ReadFile(char const *PathAndName, u8 **Data, size_t *DataSize)
         }
         
         CloseHandle(File);
+        
+#ifdef DEBUG
         DWORD Error = GetLastError();
         printf("Failed to read from file, error: %d", Error);
+#endif
+        
         return false;
     }
     

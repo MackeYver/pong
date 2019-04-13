@@ -22,7 +22,7 @@
 // SOFTWARE.
 //
 
-#include "renderer.h"
+#include "draw_calls.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,52 +37,52 @@
 // Init and shutdown, basically memory stuff
 //
 
-void Init(renderer *Renderer, size_t MemorySize, display_metrics DisplayMetrics)
+void Init(draw_calls *DrawCalls, size_t MemorySize, display_metrics DisplayMetrics)
 {
-    assert(Renderer);
+    assert(DrawCalls);
     assert(MemorySize > 0);
     
-    Renderer->Memory = static_cast<u8 *>(calloc(1, MemorySize));
-    assert(Renderer->Memory);
+    DrawCalls->Memory = static_cast<u8 *>(calloc(1, MemorySize));
+    assert(DrawCalls->Memory);
     
-    Renderer->MemorySize = MemorySize;
-    Renderer->MemoryUsed = 0;
+    DrawCalls->MemorySize = MemorySize;
+    DrawCalls->MemoryUsed = 0;
     
-    Renderer->DisplayMetrics = DisplayMetrics;
+    DrawCalls->DisplayMetrics = DisplayMetrics;
 }
 
 
-void Shutdown(renderer *Renderer)
+void Shutdown(draw_calls *DrawCalls)
 {
-    assert(Renderer);
+    assert(DrawCalls);
     
-    if (Renderer->Memory)
+    if (DrawCalls->Memory)
     {
-        free(Renderer->Memory);
+        free(DrawCalls->Memory);
     }
     
-    Renderer->Memory = nullptr;
-    Renderer->MemoryUsed = 0;
-    Renderer->MemorySize = 0;
+    DrawCalls->Memory = nullptr;
+    DrawCalls->MemoryUsed = 0;
+    DrawCalls->MemorySize = 0;
 }
 
-void ClearMemory(renderer *Renderer)
+void ClearMemory(draw_calls *DrawCalls)
 {
-    assert(Renderer);
-    Renderer->MemoryUsed = 0;
+    assert(DrawCalls);
+    DrawCalls->MemoryUsed = 0;
 }
 
-u8 *PushMemory(renderer *Renderer, size_t Size)
+u8 *PushMemory(draw_calls *DrawCalls, size_t Size)
 {
-    assert(Renderer);
-    assert(Renderer->Memory);
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
     
     u8 *Result = nullptr;
     
-    if ((Renderer->MemorySize - Renderer->MemoryUsed) >= Size)
+    if ((DrawCalls->MemorySize - DrawCalls->MemoryUsed) >= Size)
     {
-        Result = (Renderer->Memory + Renderer->MemoryUsed);
-        Renderer->MemoryUsed += Size;
+        Result = (DrawCalls->Memory + DrawCalls->MemoryUsed);
+        DrawCalls->MemoryUsed += Size;
     }
     
     return Result;
@@ -94,13 +94,13 @@ u8 *PushMemory(renderer *Renderer, size_t Size)
 // Draw calls
 //
 
-void PushFilledRectangle(renderer *Renderer, v2 P, v2 Size, v4 Colour)
+void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour)
 {
-    assert(Renderer);
-    assert(Renderer->Memory);
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
     
     size_t DrawCallSize = sizeof(draw_call_filled_rectangle);
-    draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(PushMemory(Renderer, DrawCallSize));
+    draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(PushMemory(DrawCalls, DrawCallSize));
     assert(DrawCall);
     
     DrawCall->Header.Size = DrawCallSize;
@@ -111,16 +111,33 @@ void PushFilledRectangle(renderer *Renderer, v2 P, v2 Size, v4 Colour)
     DrawCall->Size = Size;
 }
 
-void PushText(renderer *Renderer, v2 P, wchar_t const *Text)
+void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour)
 {
-    assert(Renderer);
-    assert(Renderer->Memory);
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
+    
+    size_t DrawCallSize = sizeof(draw_call_filled_circle);
+    draw_call_filled_circle *DrawCall = reinterpret_cast<draw_call_filled_circle *>(PushMemory(DrawCalls, DrawCallSize));
+    assert(DrawCall);
+    
+    DrawCall->Header.Size = DrawCallSize;
+    DrawCall->Header.Type = DrawCallType_FilledCircle;
+    
+    DrawCall->Colour = Colour;
+    DrawCall->P = P;
+    DrawCall->Radius = Radius;
+}
+
+void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
+{
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
     
     size_t DrawCallSize = sizeof(draw_call_text);
     size_t TextSize = (wcslen(Text) + 1) * sizeof(wchar_t);
     size_t TotalSize = DrawCallSize + TextSize;
     
-    draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(PushMemory(Renderer, TotalSize));
+    draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(PushMemory(DrawCalls, TotalSize));
     assert(DrawCall);
     
     DrawCall->Header.Size = TotalSize;

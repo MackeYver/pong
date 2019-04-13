@@ -110,6 +110,4 @@ void ResolveCollisions(dynamics_state *State, std::vector<collision_info>& Input
 
 
 
-
-
 #endif

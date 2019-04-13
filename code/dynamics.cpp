@@ -26,7 +26,6 @@
 
 
 
-
 //
 // Structs
 //
@@ -174,6 +173,7 @@ void ResolveCollisions(dynamics_state *State, std::vector<collision_info>& Input
         
         f32 TotalInverseMass = Body[0]->InverseMass + Body[1]->InverseMass;
         
+        
         // 
         // Interpenetration
         if (!Collision.SkipInterpenetration)
@@ -213,112 +213,6 @@ void ResolveCollisions(dynamics_state *State, std::vector<collision_info>& Input
 }
 
 
-#if 0
-void DetectAndResolveCollisions(dynamics_state *State, f32 dt)
-{
-    for (u32 IndexA = 0; IndexA < 5; ++IndexA)
-    {
-        for (u32 IndexB = IndexA + 1; IndexB < 5; ++IndexB)
-        {
-            assert(IndexA != IndexB);
-            
-            body *Body[2];
-            Body[0] = &State->Bodies[IndexA];
-            Body[1] = &State->Bodies[IndexB];
-            
-            collision_info Collision;
-            if (Intersects(Body[0], Body[1], &Collision))
-            {
-                f32 TotalInverseMass = Body[0]->InverseMass + Body[1]->InverseMass;
-                if (!AlmostEqualRelative(TotalInverseMass, 0.0f))
-                {
-                    // 
-                    // Interpenetration
-                    f32 AShare = Body[0]->InverseMass / TotalInverseMass;
-                    
-                    f32 dP = Collision.Depth + 0.001f; // Nudge it a bit further so that it is not colliding anymore
-                    f32 dPa = AShare * dP;
-                    f32 dPb = dP - dPa;
-                    
-                    v2 dPMaska = Body[0]->dPMask;
-                    v2 dPMaskb = Body[1]->dPMask;
-                    
-                    Body[0]->P += Hadamard(dPMaska, dPa * -Collision.N);
-                    Body[1]->P += Hadamard(dPMaskb, dPb *  Collision.N);
-                    
-                    
-                    //
-                    // Resolve collision (by changing the velocity, a.k.a. dP)
-                    body *BallBody = &State->Bodies[State->Ball.BodyIndex];
-                    body *PlayerBody[2];
-                    PlayerBody[0] = &State->Bodies[State->Players[0].BodyIndex];
-                    PlayerBody[1] = &State->Bodies[State->Players[1].BodyIndex];
-                    
-                    body *BorderBody[2];
-                    BorderBody[0] = &State->Bodies[State->Borders[0].BodyIndex];
-                    BorderBody[1] = &State->Bodies[State->Borders[1].BodyIndex];
-                    
-                    
-                    //
-                    // Will be used in order to determine if we shall play any sounds
-                    b32 TheBallIsInvolved = false;
-                    b32 ABorderIsInvolved = false;
-                    b32 APlayerIsInvolved = false;
-                    
-                    
-                    //
-                    // Check what entities were involved in the collision
-                    for (u32 Index = 0; Index < 2; ++Index)
-                    {
-                        if ((Body[Index] == PlayerBody[0]) || (Body[Index] == PlayerBody[1]))
-                        {
-                            APlayerIsInvolved = true;
-                        }
-                        else if ((Body[Index] == BallBody) || (Body[Index] == BallBody))
-                        {
-                            TheBallIsInvolved = true;
-                        }
-                        else if ((Body[Index] == BorderBody[0]) || (Body[Index] == BorderBody[1]))
-                        {
-                            ABorderIsInvolved = true;
-                        }
-                    }
-                    
-                    f32 Coeff = 1.0f;
-                    
-                    //
-                    // Play sounds
-                    if (TheBallIsInvolved && APlayerIsInvolved)
-                    {
-                        State->Audio.Play(Audio_PaddleBounce);
-                        Coeff = 1.25f;
-                    }
-                    else if (TheBallIsInvolved && ABorderIsInvolved)
-                    {
-                        State->Audio.Play(Audio_BorderBounce);
-                        Coeff = 0.95f;
-                    }
-                    
-                    
-                    //
-                    // Calculate forces due to the collision
-                    if (!(APlayerIsInvolved && ABorderIsInvolved)) // No forces applied in this scenario!
-                    {
-                        v2 N = Collision.N;
-                        v2 Va = Body[0]->dP;
-                        v2 Vb = Body[1]->dP;
-                        
-                        Body[0]->dP = Coeff * Hadamard(dPMaska, -2.0f * Dot(N, Va)*N + Va);
-                        Body[1]->dP = Coeff * Hadamard(dPMaskb, -2.0f * Dot(N, Vb)*N + Vb);
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
-
-
 
 
 //
@@ -332,7 +226,7 @@ void UpdateBody(body& Body, f32 dt)
     Body.PrevP = Body.P;
     Body.P += Body.dP * dt;
     
-    v2 ddP = Body.F * Body.InverseMass; // F = ma . a = F/m . a = F * (1/m)
+    v2 ddP = Body.F * Body.InverseMass; // F = ma ->  a = F/m -> a = F * (1/m)
     Body.F = v2_zero;
     
     Body.dP += Hadamard(Body.dPMask, ddP * dt - Body.Damping * Body.dP);

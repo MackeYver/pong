@@ -22,14 +22,15 @@
 // SOFTWARE.
 //
 
-#ifndef renderer__h
-#define renderer__h
+#ifndef draw_calls__h
+#define draw_calls__h
 
 #include "mathematics.h"
 
 
+
 //
-// Renderer
+// Draw call management
 //
 
 struct display_metrics
@@ -41,8 +42,7 @@ struct display_metrics
     u32 ScreenHeight;
 };
 
-
-struct renderer
+struct draw_calls
 {
     u8 *Memory = nullptr;
     size_t MemorySize = 0;
@@ -51,9 +51,20 @@ struct renderer
     display_metrics DisplayMetrics;
 };
 
-void Init(renderer *Renderer, size_t Size, display_metrics DisplayMetrics);
-void ClearMemory(renderer *Renderer);
-void Shutdown(renderer *Renderer);
+void Init(draw_calls *DrawCalls, size_t Size, display_metrics DisplayMetrics);
+void ClearMemory(draw_calls *DrawCalls);
+void Shutdown(draw_calls *DrawCalls);
+
+
+
+
+//
+// Draw calls
+//
+
+void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour = v4_one);
+void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour = v4_one);
+void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
 
 
 
@@ -65,16 +76,19 @@ void Shutdown(renderer *Renderer);
 enum draw_call_type
 {
     DrawCallType_FilledRectangle = 0,
+    DrawCallType_FilledCircle,
     DrawCallType_Text,
     
     DrawCallType_Count,
 };
+
 
 struct draw_call_header
 {
     size_t Size;
     draw_call_type Type;
 };
+
 
 struct draw_call_filled_rectangle
 {
@@ -84,15 +98,22 @@ struct draw_call_filled_rectangle
     v2 Size;
 };
 
+
+struct draw_call_filled_circle
+{
+    draw_call_header Header;
+    v4 Colour;
+    v2 P;
+    f32 Radius;
+};
+
+
 struct draw_call_text
 {
     draw_call_header Header;
     wchar_t *Text;
     v2 P;
 };
-
-void PushFilledRectangle(renderer *Renderer, v2 P, v2 Size, v4 Colour = v4_one);
-void PushText(renderer *Renderer, v2 P, wchar_t const *Text); 
 
 
 

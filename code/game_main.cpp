@@ -59,7 +59,7 @@ void End(game_state *State);
 void Init(game_state *State)
 {
     assert(State);
-    assert(State->Renderer);
+    assert(State->DrawCalls);
     
     State->GameMode = GameMode_Inactive;
     
@@ -150,8 +150,8 @@ void Init(game_state *State)
         //
         // Borders
         {
-            f32 const Width  = (f32)State->Renderer->DisplayMetrics.WindowWidth;
-            f32 const Height = (f32)State->Renderer->DisplayMetrics.WindowHeight;
+            f32 const Width  = (f32)State->DrawCalls->DisplayMetrics.WindowWidth;
+            f32 const Height = (f32)State->DrawCalls->DisplayMetrics.WindowHeight;
             
             f32 const vh = 8.0f;  // Visible height
             f32 const h = 160.0f; // Actual height (larger due to sloppy collision detection)
@@ -195,7 +195,7 @@ void Update(game_state *State, f32 dt)
 {
     assert(State);
     assert(dt > 0.0f);
-    assert(State->Renderer);
+    assert(State->DrawCalls);
     
     //
     // Process inputs
@@ -276,7 +276,7 @@ void Update(game_state *State, f32 dt)
         {
             Score(State, 1);
         }
-        else if (Body->P.x > State->Renderer->DisplayMetrics.WindowWidth)
+        else if (Body->P.x > State->DrawCalls->DisplayMetrics.WindowWidth)
         {
             Score(State, 0);
         }
@@ -326,6 +326,7 @@ void ServeBoll(game_state *State)
     
     body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
     Body->F = V2(Cos(Angle), Sin(Angle)) * 30000.0f;
+    Body->F = V2(1.0f, 0.0f) * 30000.0f;
 }
 
 
@@ -393,56 +394,56 @@ void End(game_state *State)
 // Rendering
 //
 
-void RenderBodyAsRectangle(renderer *Renderer, body *Body, v4 Colour)
+void RenderBodyAsRectangle(draw_calls *DrawCalls, body *Body, v4 Colour)
 {
-    PushFilledRectangle(Renderer, Body->P, 2.0f*Body->Shape.HalfSize, Colour);
+    PushFilledRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, Colour);
 }
 
 
-void RenderBodyAsCircle(renderer *Renderer, body *Body, v4 Colour)
+void RenderBodyAsCircle(draw_calls *DrawCalls, body *Body, v4 Colour)
 {
-    PushFilledRectangle(Renderer, Body->P, 2.0f*Body->Shape.HalfSize, Colour);
+    PushFilledCircle(DrawCalls, Body->P, Body->Shape.Radius, Colour);
 }
 
 
 void RenderScores(game_state *State)
 {
-    renderer *Renderer = State->Renderer;
+    draw_calls *DrawCalls = State->DrawCalls;
     
-    f32 const Width  = (f32)Renderer->DisplayMetrics.WindowWidth;
-    f32 const Height = (f32)Renderer->DisplayMetrics.WindowHeight;
+    f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
+    f32 const Height = (f32)DrawCalls->DisplayMetrics.WindowHeight;
     
     //
     // Scores
     wchar_t ScoreString[4];
     _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[0].Score);
-    PushText(State->Renderer, V2(0.5f * Width - 70.0f, 48.0f), ScoreString);
+    PushText(State->DrawCalls, V2(0.5f * Width - 70.0f, 48.0f), ScoreString);
     
     _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[1].Score);
-    PushText(State->Renderer, V2(0.5f * Width + 70.0f, 48.0f), ScoreString);
+    PushText(State->DrawCalls, V2(0.5f * Width + 70.0f, 48.0f), ScoreString);
 }
 
 
 void Render(game_state *State)
 {
     assert(State);
-    assert(State->Renderer);
+    assert(State->DrawCalls);
     
-    renderer *Renderer = State->Renderer;
+    draw_calls *DrawCalls = State->DrawCalls;
     
-    f32 const Width  = (f32)Renderer->DisplayMetrics.WindowWidth;
-    f32 const Height = (f32)Renderer->DisplayMetrics.WindowHeight;
+    f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
+    f32 const Height = (f32)DrawCalls->DisplayMetrics.WindowHeight;
     
     //
     // Render
     {
-        RenderBodyAsRectangle(Renderer, GetBody(&State->Dynamics, State->Players[0].BodyIndex), State->Players[0].Colour);
-        RenderBodyAsRectangle(Renderer, GetBody(&State->Dynamics, State->Players[1].BodyIndex), State->Players[1].Colour);
+        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Players[0].BodyIndex), State->Players[0].Colour);
+        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Players[1].BodyIndex), State->Players[1].Colour);
         
-        RenderBodyAsRectangle(Renderer, GetBody(&State->Dynamics, State->Borders[0].BodyIndex), State->Borders[0].Colour);
-        RenderBodyAsRectangle(Renderer, GetBody(&State->Dynamics, State->Borders[1].BodyIndex), State->Borders[1].Colour);
+        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Borders[0].BodyIndex), State->Borders[0].Colour);
+        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Borders[1].BodyIndex), State->Borders[1].Colour);
         
-        RenderBodyAsCircle(Renderer, GetBody(&State->Dynamics, State->Ball.BodyIndex), State->Ball.Colour);
+        RenderBodyAsCircle(DrawCalls, GetBody(&State->Dynamics, State->Ball.BodyIndex), State->Ball.Colour);
     }
     
     RenderScores(State);
@@ -454,21 +455,21 @@ void Render(game_state *State)
             f32  y = 200.0f;
             f32 dy =  70.0f;
             
-            PushText(State->Renderer, V2(0.5f * Width, y)            , L"Pong!");
-            PushText(State->Renderer, V2(0.5f * Width, y + dy)       , L"Press 1 to start a one player game");
-            PushText(State->Renderer, V2(0.5f * Width, y + 2.0f * dy), L"Press 2 to start a two player game");
+            PushText(State->DrawCalls, V2(0.5f * Width, y)            , L"Pong!");
+            PushText(State->DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 1 to start a one player game");
+            PushText(State->DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 2 to start a two player game");
         } break;
         
         case GameMode_Paused:
         {
-            PushText(State->Renderer, V2(0.5f * Width, 200.0f), L"Paused!");
+            PushText(State->DrawCalls, V2(0.5f * Width, 200.0f), L"Paused!");
         } break;
         
         case GameMode_Scored:
         {
-            PushText(State->Renderer, V2(0.5f * Width, 200.0f), L"Score!");
-            PushText(State->Renderer, V2(0.5f * Width, 235.0f), L"------");
-            PushText(State->Renderer, V2(0.5f * Width, 290.0f), L"Press P to resume");
+            PushText(State->DrawCalls, V2(0.5f * Width, 200.0f), L"Score!");
+            PushText(State->DrawCalls, V2(0.5f * Width, 235.0f), L"------");
+            PushText(State->DrawCalls, V2(0.5f * Width, 290.0f), L"Press P to resume");
         } break;
     }
 }
@@ -600,8 +601,8 @@ void ProcessInput(game_state *State)
 
 void Reset(game_state *State)
 {
-    f32 const Width  = (f32)State->Renderer->DisplayMetrics.WindowWidth;
-    f32 const Height = (f32)State->Renderer->DisplayMetrics.WindowHeight;
+    f32 const Width  = (f32)State->DrawCalls->DisplayMetrics.WindowWidth;
+    f32 const Height = (f32)State->DrawCalls->DisplayMetrics.WindowHeight;
     
     
     //
