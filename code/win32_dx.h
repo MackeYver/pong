@@ -38,6 +38,7 @@
 
 #include "mathematics.h"
 #include "draw_calls.h"
+#include "win32_dw.h"
 
 
 
@@ -68,10 +69,14 @@ struct dx_state
     ID3D11VertexShader *vsBasic = nullptr;
     ID3D11PixelShader *psBasic = nullptr;
     
+    //
+    // Primitives
     // @debug
     ID3D11Buffer *VertexBufferRectangle = nullptr;
     ID3D11Buffer *VertexBufferCircle = nullptr;
     u32 VertexCountCircle = 0;
+    ID3D11Texture2D *PrimitiveTexture = nullptr; // A 1x1 white texture
+    ID3D11ShaderResourceView *PrimitiveShaderView;
     
     //
     // Fullscreen program (renders the RenderTargetTexture to a textured fullscreen quad)
@@ -106,6 +111,10 @@ struct dx_state
     
     u32 Width = 1920;
     u32 Height = 1080;
+    
+    //
+    // DirectWrite
+    dw_state DWState;
 };
 
 

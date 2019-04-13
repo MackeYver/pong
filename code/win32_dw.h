@@ -23,42 +23,40 @@
 //
 
 
-struct vs_input
+#ifndef win32_dw__h
+#define win32_dw__h
+
+//#include <d3d11.h>
+//#include <dxgi.h>
+//#ifdef DEBUG
+//#include <dxgidebug.h>
+//#endif
+
+#include <dwrite.h> // DirectWrite (Dwrite.lib)
+#include <d2d1_1.h> // Direct2D    (D2d1_1.lib)
+
+#include "mathematics.h"
+
+
+
+struct dx_state; // found in win32_dx.h
+
+struct dw_state
 {
-    float2 P : POSITION0;
-    float2 T : TEXCOORD0;
+    ID2D1Device *Device = nullptr;
+    ID2D1DeviceContext *DeviceContext = nullptr;
+    ID2D1Bitmap1 *RenderTarget = nullptr;
+    ID2D1SolidColorBrush *Brush = nullptr;
+    IDWriteTextFormat *TextFormat = nullptr;
 };
 
-struct ps_input
-{	
-    float4 P : SV_Position;
-    float2 T : TEXCOORD0;
-};
+b32 Init(dw_state *State, dx_state *DXState);
+void Shutdown(dw_state *State);
+
+void BeginDraw(dw_state *State);
+HRESULT EndDraw(dw_state *State);
+
+void DrawText(dw_state *State, v2 P, wchar_t const *String);
 
 
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
-
-
-
-//
-// Vertex shader
-//
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
-    
-    return Result;
-}
-
-
-
-//
-// Pixel shader
-//
-float4 pMain(ps_input In) : SV_TARGET
-{
-    return gTexture.Sample(gSampler, In.T);
-}
+#endif

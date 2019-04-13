@@ -25,20 +25,42 @@
 #include "common.h"
 
 
+struct vs_input
+{
+    float2 P : POSITION0;
+    float2 T : TEXCOORD0;
+};
+
+struct ps_input
+{
+    float4 P : SV_Position;
+    float2 T : TEXCOORD0;
+};
+
+
+Texture2D    gTexture : register(t0);
+SamplerState gSampler : register(s0);
+
 
 //
 // Vertex shader
-float4 vMain(float2 P : POSITION) : SV_Position
+ps_input vMain(vs_input In)
 {
-	float4x4 ObjectToClip = mul(ObjectToWorld, WorldToClip);
-	float4 Result = mul(float4(P, 0.0f, 1.0f), ObjectToClip);
-	return Result;
+    ps_input Result;
+    float4x4 ObjectToClip = mul(ObjectToWorld, WorldToClip);
+    Result.P = mul(float4(In.P, 0.0f, 1.0f), ObjectToClip);
+    Result.T = In.T;
+    
+    return Result;
 }
 
 
 //
 // Pixel shader
-float4 pMain() : SV_Target
+float4 pMain(ps_input In) : SV_Target
 {
-	return Colour;
+    float4 TextureColour = gTexture.Sample(gSampler, In.T);
+    float4 Result = TextureColour * Colour;
+    
+    return Result;
 }
