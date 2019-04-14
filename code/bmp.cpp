@@ -51,8 +51,10 @@ b32 Load(char const *PathAndFilename, bmp *Output)
                 {
                     memcpy(&Output->Header, Data + sizeof(bitmap_file_header), sizeof(dib_header));
                     
-                    Output->RowSize = 4 * (size_t)(((f32)(Header->BitsPerPixel * Header->Width) / 32.0f) + 0.5f);
-                    Output->DataSize = Output->RowSize * Header->Height;
+                    Output->Header.Height = Abs(Output->Header.Height);
+                    
+                    Output->RowSize = 4 * (size_t)(((f32)(Header->BitsPerPixel * Output->Header.Width) / 32.0f) + 0.5f);
+                    Output->DataSize = Output->RowSize * Output->Header.Height;
                     assert(Output->DataSize > 0);
                     
                     Output->Data = static_cast<u8 *>(malloc(Output->DataSize));

@@ -73,21 +73,35 @@ void Init(game_state *State)
             "data\\score.wav",
         };
         
-        for (u32 Index = 0; Index < AudioVoice_Count; ++Index)
+        for (u32 Index = 0; Index < AudioHandle_Count; ++Index)
         {
             voice_index VIndex = LoadWAV(&State->Resources, PathAndFilename[Index]);
             assert(VIndex >= 0);
-            State->AudioIndices[Index] = VIndex;
+            State->AudioHandles[Index] = VIndex;
         }
         
-        State->Audio.Play(AudioVoice_Theme);
+        State->Audio.Play(AudioHandle_Theme);
     }
     
     
     //
     // Load textures
     {
-        // TODO(Marcus): Implement!
+        char const *PathAndFilename[] = 
+        {
+            "data\\ball.bmp",
+            "data\\paddle.bmp",
+            "data\\wall_top.bmp",
+            "data\\wall_bottom.bmp",
+            
+        };
+        
+        for (u32 Index = 0; Index < TextureHandle_Count; ++Index)
+        {
+            texture_index TIndex = LoadBMP(&State->Resources, PathAndFilename[Index]);
+            assert(TIndex >= 0);
+            State->TextureHandles[Index] = TIndex;
+        }
     }
     
     
@@ -251,12 +265,12 @@ void Update(game_state *State, f32 dt)
             // Play sounds
             if (TheBallIsInvolved && APlayerIsInvolved)
             {
-                State->Audio.Play(AudioVoice_PaddleBounce);
+                State->Audio.Play(AudioHandle_PaddleBounce);
                 Collision.ForceModifier = 0.25f;
             }
             else if (TheBallIsInvolved && ABorderIsInvolved)
             {
-                State->Audio.Play(AudioVoice_BorderBounce);
+                State->Audio.Play(AudioHandle_BorderBounce);
                 Collision.ForceModifier = -0.15f;
             }
             else if (APlayerIsInvolved && ABorderIsInvolved)
@@ -335,7 +349,7 @@ void Start(game_state *State)
 {
     assert(State);
     
-    State->Audio.Stop(AudioVoice_Theme);
+    State->Audio.Stop(AudioHandle_Theme);
     
     Reset(State);
     State->GameMode = GameMode_Playing;
@@ -349,7 +363,7 @@ void NewGame(game_state *State)
 {
     assert(State);
     
-    State->Audio.Stop(AudioVoice_Theme);
+    State->Audio.Stop(AudioHandle_Theme);
     
     Reset(State);
     State->GameMode = GameMode_Playing;
@@ -363,7 +377,7 @@ void NewGame(game_state *State)
 
 void Score(game_state *State, u32 ScoringPlayerIndex)
 {
-    State->Audio.Play(AudioVoice_Score);
+    State->Audio.Play(AudioHandle_Score);
     
     State->GameMode = GameMode_Scored;
     ++State->Players[ScoringPlayerIndex].Score;
@@ -384,7 +398,7 @@ void End(game_state *State)
     assert(State);
     
     State->GameMode = GameMode_Inactive;
-    State->Audio.Play(AudioVoice_Theme);
+    State->Audio.Play(AudioHandle_Theme);
 }
 
 
@@ -394,17 +408,37 @@ void End(game_state *State)
 // Rendering
 //
 
+texture_index GetTexture(game_state *State, texture_handle Handle)
+{
+    texture_index Result = -1;
+    
+    if ((Handle >= 0) && (Handle < TextureHandle_Count))
+    {
+        Result = State->TextureHandles[Handle];
+    }
+    
+    return Result;
+}
+
 void RenderBodyAsRectangle(draw_calls *DrawCalls, body *Body, v4 Colour)
 {
     PushFilledRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, Colour);
 }
 
+void RenderBodyAsTexturedRectangle(draw_calls *DrawCalls, body *Body, texture_index TextureIndex, v4 Colour = v4_one)
+{
+    PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex, Colour);
+}
 
 void RenderBodyAsCircle(draw_calls *DrawCalls, body *Body, v4 Colour)
 {
     PushFilledCircle(DrawCalls, Body->P, Body->Shape.Radius, Colour);
 }
 
+void RenderBodyAsTexturedCircle(draw_calls *DrawCalls, body *Body, texture_index TextureIndex, v4 Colour = v4_one)
+{
+    PushTexturedCircle(DrawCalls, Body->P, Body->Shape.Radius, TextureIndex, Colour);
+}
 
 void RenderScores(game_state *State)
 {
@@ -436,13 +470,32 @@ void Render(game_state *State)
     //
     // Render
     {
+#if 0
         RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Players[0].BodyIndex), State->Players[0].Colour);
         RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Players[1].BodyIndex), State->Players[1].Colour);
+#endif
         
+        for (u32 Index = 0; Index < 2; ++Index)
+        {
+            RenderBodyAsTexturedRectangle(DrawCalls, 
+                                          GetBody(&State->Dynamics, State->Players[Index].BodyIndex), 
+                                          GetTexture(State, TextureHandle_Paddle));
+            
+            RenderBodyAsTexturedRectangle(DrawCalls, 
+                                          GetBody(&State->Dynamics, State->Borders[Index].BodyIndex), 
+                                          GetTexture(State, (texture_handle)((u32)TextureHandle_WallTop + Index)));
+            
+        }
+        
+        
+#if 0
         RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Borders[0].BodyIndex), State->Borders[0].Colour);
         RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Borders[1].BodyIndex), State->Borders[1].Colour);
+#endif
         
-        RenderBodyAsCircle(DrawCalls, GetBody(&State->Dynamics, State->Ball.BodyIndex), State->Ball.Colour);
+        RenderBodyAsTexturedCircle(DrawCalls, 
+                                   GetBody(&State->Dynamics, State->Ball.BodyIndex), 
+                                   GetTexture(State, TextureHandle_Ball));
     }
     
     RenderScores(State);
@@ -527,7 +580,7 @@ void ProcessInput(game_state *State)
             State->PressedKeys.erase(0x52);
             Reset(State);
             State->GameMode = GameMode_Inactive;
-            State->Audio.Play(AudioVoice_Theme);
+            State->Audio.Play(AudioHandle_Theme);
         }
         
         if (State->GameMode == GameMode_Playing)

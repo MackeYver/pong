@@ -229,7 +229,7 @@ void UpdateBody(body& Body, f32 dt)
     v2 ddP = Body.F * Body.InverseMass; // F = ma ->  a = F/m -> a = F * (1/m)
     Body.F = v2_zero;
     
-    Body.dP += Hadamard(Body.dPMask, ddP * dt - Body.Damping * Body.dP);
+    Body.dP += Hadamard(Body.dPMask, (ddP * dt) - (Body.Damping * Body.dP));
     
     if (Body.dP.y > Body.dPMax.y)
     {

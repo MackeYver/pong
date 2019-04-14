@@ -66,14 +66,30 @@ struct border
 // Audio
 //
 
-enum audio_voice_handles // @debug
+enum audio_handle // @debug
 {
-    AudioVoice_Theme = 0,
-    AudioVoice_PaddleBounce,
-    AudioVoice_BorderBounce,
-    AudioVoice_Score,
+    AudioHandle_Theme = 0,
+    AudioHandle_PaddleBounce,
+    AudioHandle_BorderBounce,
+    AudioHandle_Score,
     
-    AudioVoice_Count
+    AudioHandle_Count
+};
+
+
+
+//
+// Textures
+//
+
+enum texture_handle // @debug
+{
+    TextureHandle_Ball = 0,
+    TextureHandle_Paddle,
+    TextureHandle_WallTop,
+    TextureHandle_WallBottom,
+    
+    TextureHandle_Count
 };
 
 
@@ -102,12 +118,13 @@ struct game_state
     //
     // Rendering
     draw_calls DrawCalls;
+    texture_index TextureHandles[TextureHandle_Count];
     
     
     //
     // Audio
     audio Audio;
-    voice_index AudioIndices[AudioVoice_Count];
+    voice_index AudioHandles[AudioHandle_Count];
     
     
     //

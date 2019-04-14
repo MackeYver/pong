@@ -111,6 +111,26 @@ void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour)
     DrawCall->Size = Size;
 }
 
+
+void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index TextureIndex, v4 Colour)
+{
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
+    
+    size_t DrawCallSize = sizeof(draw_call_textured_rectangle);
+    draw_call_textured_rectangle *DrawCall = reinterpret_cast<draw_call_textured_rectangle *>(PushMemory(DrawCalls, DrawCallSize));
+    assert(DrawCall);
+    
+    DrawCall->Header.Size = DrawCallSize;
+    DrawCall->Header.Type = DrawCallType_TexturedRectangle;
+    
+    DrawCall->Colour = Colour;
+    DrawCall->P = P;
+    DrawCall->Size = Size;
+    DrawCall->TextureIndex = TextureIndex;
+}
+
+
 void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour)
 {
     assert(DrawCalls);
@@ -127,6 +147,26 @@ void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour)
     DrawCall->P = P;
     DrawCall->Radius = Radius;
 }
+
+
+void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index TextureIndex, v4 Colour)
+{
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
+    
+    size_t DrawCallSize = sizeof(draw_call_textured_circle);
+    draw_call_textured_circle *DrawCall = reinterpret_cast<draw_call_textured_circle *>(PushMemory(DrawCalls, DrawCallSize));
+    assert(DrawCall);
+    
+    DrawCall->Header.Size = DrawCallSize;
+    DrawCall->Header.Type = DrawCallType_TexturedCircle;
+    
+    DrawCall->Colour = Colour;
+    DrawCall->P = P;
+    DrawCall->Radius = Radius;
+    DrawCall->TextureIndex = TextureIndex;
+}
+
 
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
 {

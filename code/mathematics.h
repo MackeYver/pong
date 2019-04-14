@@ -89,6 +89,18 @@ inline f32 Arctan2(f32 const& x, f32 const& y) {
     return Result;
 }
 
+inline f32 Abs(f32 a)
+{
+    f32 Result = fabsf(a);
+    return Result;
+}
+
+inline s32 Abs(s32 a)
+{
+    s32 Result = abs(a);
+    return Result;
+}
+
 inline b32 AlmostEqualRelative(f32 a, f32 b, f32 MaxRelDiff = FLT_EPSILON)
 {
     // From: https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/

@@ -26,7 +26,7 @@
 #define draw_calls__h
 
 #include "mathematics.h"
-
+#include "resources.h"
 
 
 
@@ -64,7 +64,11 @@ void Shutdown(draw_calls *DrawCalls);
 //
 
 void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour = v4_one);
+void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index TextureIndex, v4 Colour = v4_one);
+
 void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour = v4_one);
+void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index TextureIndex, v4 Colour = v4_one);
+
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
 
 
@@ -79,6 +83,7 @@ enum draw_call_type
     DrawCallType_FilledRectangle = 0,
     DrawCallType_TexturedRectangle,
     DrawCallType_FilledCircle,
+    DrawCallType_TexturedCircle,
     DrawCallType_Text,
     
     DrawCallType_Count,
@@ -107,7 +112,7 @@ struct draw_call_textured_rectangle
     v4 Colour;
     v2 P;
     v2 Size;
-    //texture_index TextureIndex;
+    texture_index TextureIndex;
 };
 
 
@@ -117,6 +122,16 @@ struct draw_call_filled_circle
     v4 Colour;
     v2 P;
     f32 Radius;
+};
+
+
+struct draw_call_textured_circle
+{
+    draw_call_header Header;
+    v4 Colour;
+    v2 P;
+    f32 Radius;
+    texture_index TextureIndex;
 };
 
 

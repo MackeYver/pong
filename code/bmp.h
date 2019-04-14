@@ -51,8 +51,8 @@ struct bitmap_file_header
 struct dib_header // This is really v3, for now we'll only support this one.
 {
     u32 HeaderSize;
-    u32 Width;
-    u32 Height;
+    s32 Width;
+    s32 Height;
     u16 ColourPLaneCount;
     u16 BitsPerPixel;
     u32 CompressionMethod;
@@ -68,8 +68,8 @@ struct dib_header // This is really v3, for now we'll only support this one.
 struct dib_header_v4
 {
     u32 HeaderSize;
-    u32 Width;
-    u32 Height;
+    s32 Width;
+    s32 Height;
     u16 ColourPLaneCount;
     u16 BitsPerPixel;
     u32 CompressionMethod;
@@ -103,8 +103,8 @@ struct dib_header_v4
 struct dib_header_v5
 {
     u32 HeaderSize;
-    u32 Width;
-    u32 Height;
+    s32 Width;
+    s32 Height;
     u16 ColourPLaneCount;
     u16 BitsPerPixel;
     u32 CompressionMethod;

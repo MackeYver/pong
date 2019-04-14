@@ -949,27 +949,6 @@ void EndRendering(dx_state *State)
 // - TODO: Batch!
 //
 
-void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, v4 Colour)
-{
-    State->ShaderConstants.Colour = Colour;
-    State->ShaderConstants.ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
-    UpdateConstantBuffer(State, &State->ShaderConstants);
-    
-    ID3D11DeviceContext *DC = State->DeviceContext;
-    
-    size_t Stride = sizeof(v4);
-    size_t Offset = 0;
-    
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->ResolveShaderView);
-    
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset); 
-    DC->Draw(6, 0);
-    
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
-}
-
-
 void RenderFilledRectangle(dx_state *State, v2 Po, v2 Size, v4 Colour)
 {
     State->ShaderConstants.Colour = Colour;
@@ -984,6 +963,30 @@ void RenderFilledRectangle(dx_state *State, v2 Po, v2 Size, v4 Colour)
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
     DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset); 
     DC->Draw(6, 0);
+}
+
+
+void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, texture_index TextureIndex, v4 Colour)
+{
+    assert((TextureIndex >= 0) && ((u32)TextureIndex < State->Textures.size()));
+    
+    State->ShaderConstants.Colour = Colour;
+    State->ShaderConstants.ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
+    UpdateConstantBuffer(State, &State->ShaderConstants);
+    
+    ID3D11DeviceContext *DC = State->DeviceContext;
+    
+    size_t Stride = sizeof(v4);
+    size_t Offset = 0;
+    
+    dx_texture *Texture = &State->Textures[TextureIndex];
+    State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
+    
+    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
+    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset); 
+    DC->Draw(6, 0);
+    
+    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
 }
 
 
@@ -1003,6 +1006,27 @@ void RenderFilledCircle(dx_state *State, v2 Po, f32 Radius, v4 Colour)
     DC->Draw(State->VertexCountCircle, 0);
 }
 
+
+void RenderTexturedCircle(dx_state *State, v2 Po, f32 Radius, texture_index TextureIndex, v4 Colour)
+{
+    State->ShaderConstants.Colour = Colour;
+    State->ShaderConstants.ObjectToWorld = M4Scale(Radius, Radius, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
+    UpdateConstantBuffer(State, &State->ShaderConstants);
+    
+    ID3D11DeviceContext *DC = State->DeviceContext;
+    
+    size_t Stride = sizeof(v4);
+    size_t Offset = 0;
+    
+    dx_texture *Texture = &State->Textures[TextureIndex];
+    State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
+    
+    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
+    DC->IASetVertexBuffers(0, 1, &State->VertexBufferCircle, &Stride, &Offset); 
+    DC->Draw(State->VertexCountCircle, 0);
+    
+    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
+}
 
 
 
@@ -1025,14 +1049,12 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
             case DrawCallType_FilledRectangle:
             {
                 draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(CurrAddress);
-                DrawCall;
                 RenderFilledRectangle(State, DrawCall->P, DrawCall->Size, DrawCall->Colour);
             } break;
             
             case DrawCallType_FilledCircle:
             {
-                draw_call_filled_circle *DrawCall = reinterpret_cast<draw_call_filled_circle *>(CurrAddress);
-                DrawCall;
+                draw_call_filled_circle *DrawCall = reinterpret_cast<draw_call_filled_circle *>(CurrAddress);;
                 RenderFilledCircle(State, DrawCall->P, DrawCall->Radius, DrawCall->Colour);
             } break;
             
@@ -1044,6 +1066,18 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
                 BeginDraw(&State->DWState);
                 DrawText(&State->DWState, DrawCall->P, DrawCall->Text);
                 EndDraw(&State->DWState);
+            } break;
+            
+            case DrawCallType_TexturedRectangle:
+            {
+                draw_call_textured_rectangle *DrawCall = reinterpret_cast<draw_call_textured_rectangle *>(CurrAddress);
+                RenderTexturedRectangle(State, DrawCall->P, DrawCall->Size, DrawCall->TextureIndex, DrawCall->Colour);
+            } break;
+            
+            case DrawCallType_TexturedCircle:
+            {
+                draw_call_textured_circle *DrawCall = reinterpret_cast<draw_call_textured_circle *>(CurrAddress);;
+                RenderTexturedCircle(State, DrawCall->P, DrawCall->Radius, DrawCall->TextureIndex, DrawCall->Colour);
             } break;
             
             default:
@@ -1095,7 +1129,7 @@ texture_index CreateTexture(void *DXState, bmp *BMP)
         
         D3D11_SUBRESOURCE_DATA InitData;
         ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = &BMP->Data;
+        InitData.pSysMem = BMP->Data;
         InitData.SysMemPitch = BMP->RowSize;
         InitData.SysMemSlicePitch = 0;
         
