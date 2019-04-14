@@ -26,21 +26,45 @@
 #define win32_dx__h
 
 #include <d3d11.h>
-#include <dxgi.h>
+//#include <dxgi.h>
 
 #ifdef DEBUG
 #include <dxgidebug.h>
-#include <stdio.h>
+//#include <stdio.h>
 #endif
 
-#include <dwrite.h> // DirectWrite (Dwrite.lib)
-#include <d2d1_1.h> // Direct2D    (D2d1_1.lib)
+//#include <dwrite.h> // DirectWrite (Dwrite.lib)
+//#include <d2d1_1.h> // Direct2D    (D2d1_1.lib)
+#include <vector> // @debug
 
-#include "mathematics.h"
+//#include "mathematics.h"
 #include "draw_calls.h"
 #include "win32_dw.h"
+#include "resources.h"
+#include "bmp.h"
 
 
+
+
+//
+// Textures
+//
+
+struct dx_texture
+{
+    ID3D11Texture2D *Texture = nullptr;
+    ID3D11ShaderResourceView *ShaderView = nullptr;
+};
+
+texture_index CreateTexture(void *DXState, bmp *BMP);
+void Free(dx_texture *Texture);
+
+
+
+
+//
+// DirectX
+//
 
 struct shader_constants
 {
@@ -115,8 +139,12 @@ struct dx_state
     //
     // DirectWrite
     dw_state DWState;
+    
+    
+    //
+    // Textures
+    std::vector<dx_texture> Textures;
 };
-
 
 b32 Init(dx_state *State, HWND hWnd);
 void Shutdown(dx_state *State);

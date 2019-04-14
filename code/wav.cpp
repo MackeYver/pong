@@ -23,6 +23,8 @@
 //
 
 #include "wav.h"
+#include "win32_file_io.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -53,7 +55,7 @@ u32 constexpr kWavFourCC_XWMA = 'AMWX';
 // Structs
 //
 
-struct wav_raw_data
+struct wav_data_info
 {
     u8 *StartOfBuffer = nullptr;
     size_t CurrentIndex = 0;
@@ -68,7 +70,7 @@ struct wav_raw_data
 // Helper funtions
 //
 
-b32 IsEOF(wav_raw_data *Data, u32 BytesToAdvance = 0)
+b32 IsEOF(wav_data_info *Data, u32 BytesToAdvance = 0)
 {
     b32 Result = false;
     
@@ -82,7 +84,7 @@ b32 IsEOF(wav_raw_data *Data, u32 BytesToAdvance = 0)
 }
 
 
-b32 IsValid(wav_raw_data *Data)
+b32 IsValid(wav_data_info *Data)
 {
     b32 Result = false;
     
@@ -95,7 +97,7 @@ b32 IsValid(wav_raw_data *Data)
 }
 
 
-void Advance(wav_raw_data *Data, u32 BytesToAdvance)
+void Advance(wav_data_info *Data, u32 BytesToAdvance)
 {
     if (!IsEOF(Data, BytesToAdvance))
     {
@@ -104,7 +106,7 @@ void Advance(wav_raw_data *Data, u32 BytesToAdvance)
 }
 
 
-u8 *GetCurrentAddress(wav_raw_data *Data)
+u8 *GetCurrentAddress(wav_data_info *Data)
 {
     u8 *Result = nullptr;
     
@@ -117,7 +119,7 @@ u8 *GetCurrentAddress(wav_raw_data *Data)
 }
 
 
-u32 Peek_u32(wav_raw_data *Data)
+u32 Peek_u32(wav_data_info *Data)
 {
     u32 Result = 0;
     
@@ -130,7 +132,7 @@ u32 Peek_u32(wav_raw_data *Data)
 }
 
 
-u32 Get_u32(wav_raw_data *Data)
+u32 Get_u32(wav_data_info *Data)
 {
     u32 Result = 0;
     
@@ -144,7 +146,7 @@ u32 Get_u32(wav_raw_data *Data)
 }
 
 
-u16 Get_u16(wav_raw_data *Data)
+u16 Get_u16(wav_data_info *Data)
 {
     u16 Result = 0;
     
@@ -158,7 +160,7 @@ u16 Get_u16(wav_raw_data *Data)
 }
 
 
-b32 ParseRIFF(wav_raw_data *Data, wav_data *Output)
+b32 ParseRIFF(wav_data_info *Data, wav *Output)
 {
     b32 Result = false;
     
@@ -196,7 +198,7 @@ b32 ParseRIFF(wav_raw_data *Data, wav_data *Output)
 }
 
 
-b32 ParseFMT_(wav_raw_data *Data, wav_data *Output)
+b32 ParseFMT_(wav_data_info *Data, wav *Output)
 {
     b32 Result = false;
     
@@ -243,7 +245,7 @@ b32 ParseFMT_(wav_raw_data *Data, wav_data *Output)
 }
 
 
-b32 ParseDATA(wav_raw_data *Data, wav_data *Output)
+b32 ParseDATA(wav_data_info *Data, wav *Output)
 {
     b32 Result = false;
     
@@ -274,13 +276,54 @@ b32 ParseDATA(wav_raw_data *Data, wav_data *Output)
 // "Public" functions
 //
 
-b32 ParseWav(u8 *InputData, size_t InputDataSize, wav_data *Output)
+b32 Load(char const *PathAndFilename, wav *Output)
+{
+    b32 Result = false;
+    
+    if (Output)
+    {
+        u8 *Data = nullptr;
+        size_t DataSize;
+        
+        Result = win32_ReadFile(PathAndFilename, &Data, &DataSize);
+        
+        if (Result && Data)
+        {
+            wav_data_info DataInfo;
+            DataInfo.StartOfBuffer = Data;
+            DataInfo.CurrentIndex = 0;
+            DataInfo.SizeOfBuffer = DataSize;
+            
+            Result = ParseRIFF(&DataInfo, Output);
+            assert(Result);
+            
+            Result = ParseFMT_(&DataInfo, Output);
+            assert(Result);
+            
+            Result = ParseDATA(&DataInfo, Output);
+            assert(Result);
+            
+            if (Data)
+            {
+                free(Data);
+                Data = nullptr;
+                DataSize = 0;
+            }
+        }
+    }
+    
+    return Result;
+}
+
+
+#if 0
+b32 ParseWav(u8 *InputData, size_t InputDataSize, wav *Output)
 {
     assert(InputData);
     assert(InputDataSize > 0);
     assert(Output);
     
-    wav_raw_data Data;
+    wav_data_info Data;
     Data.StartOfBuffer = InputData;
     Data.CurrentIndex = 0;
     Data.SizeOfBuffer = InputDataSize;
@@ -297,16 +340,17 @@ b32 ParseWav(u8 *InputData, size_t InputDataSize, wav_data *Output)
     
     return Result;
 }
+#endif
 
 
-void FreeWavData(wav_data *Data)
+void Free(wav *Data)
 {
     if (Data)
     {
         if (Data->Data)
         {
             free(Data->Data);
-            memset(Data, 0, sizeof(wav_data));
+            memset(Data, 0, sizeof(wav));
         }
     }
 }

@@ -28,6 +28,8 @@
 #include "draw_calls.h"
 #include "audio.h"
 #include "dynamics.h"
+#include "resources.h"
+
 #include <vector>
 #include <map>
 
@@ -61,10 +63,10 @@ struct border
 
 
 //
-// Game stuff
+// Audio
 //
 
-enum audio_voice_indices // @debug
+enum audio_voice_handles // @debug
 {
     AudioVoice_Theme = 0,
     AudioVoice_PaddleBounce,
@@ -73,6 +75,12 @@ enum audio_voice_indices // @debug
     
     AudioVoice_Count
 };
+
+
+
+//
+// Game
+//
 
 enum game_mode
 {
@@ -84,21 +92,43 @@ enum game_mode
     GameMode_Count,
 };
 
+
 struct game_state
 {
-    draw_calls *DrawCalls = nullptr;
+    //
+    // Resources
+    resources Resources;
     
+    //
+    // Rendering
+    draw_calls DrawCalls;
+    
+    
+    //
+    // Audio
     audio Audio;
-    voice_index AudioVoices[AudioVoice_Count];
+    voice_index AudioIndices[AudioVoice_Count];
     
+    
+    //
+    // Input
     std::map<u8, u8> PressedKeys; // TODO(Marcus): Implement proper input handling and processing.
     
+    
+    //
+    // Physics
     dynamics_state Dynamics;
     
+    
+    //
+    // Entities
     player Players[2];
     border Borders[2];
     ball Ball;
     
+    
+    //
+    // Game data
     v4 BackgroundColour;
     
     u8 PlayerCount;

@@ -24,6 +24,7 @@
 
 #include "win32_dx.h"
 #include "win32_file_io.h"
+#include "resources.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -45,7 +46,7 @@
 // Shutdown and Init
 //
 
-#define DX_RELEASE(x) State->x ? State->x->Release() : 0;
+#define DX_RELEASE(x) State->x ? State->x->Release() : 0
 
 void Shutdown(dx_state *State)
 {
@@ -77,6 +78,17 @@ void Shutdown(dx_state *State)
     DX_RELEASE(Device);
     
     Shutdown(&State->DWState);
+    
+    
+    //
+    // Textures
+    for (std::vector<dx_texture>::size_type Index = 0;
+         Index < State->Textures.size();
+         ++Index)
+    {
+        Free(&State->Textures[Index]);
+    }
+    State->Textures.clear();
 }
 
 
@@ -1028,11 +1040,10 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
             {
                 draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(CurrAddress);
                 DrawCall;
-#if 0
-                BeginDraw(&DirectWriteState);
-                DrawText(&DirectWriteState, DrawCall->P, DrawCall->Text);
-                EndDraw(&DirectWriteState);
-#endif
+                
+                BeginDraw(&State->DWState);
+                DrawText(&State->DWState, DrawCall->P, DrawCall->Text);
+                EndDraw(&State->DWState);
             } break;
             
             default:
@@ -1047,4 +1058,85 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
     ClearMemory(DrawCalls);
     
     EndRendering(State);
+}
+
+
+
+
+//
+// Texture handling
+//
+
+texture_index CreateTexture(void *DXState, bmp *BMP)
+{
+    dx_state *State = reinterpret_cast<dx_state *>(DXState); // CRAZY!
+    texture_index Result = -1;
+    
+    if (BMP)
+    {
+        dx_texture T;
+        
+        //
+        // Texture
+        D3D11_TEXTURE2D_DESC TexDesc;
+        ZeroMemory(&TexDesc, sizeof(D3D11_TEXTURE2D_DESC));
+        
+        TexDesc.Width = BMP->Header.Width;
+        TexDesc.Height = BMP->Header.Height;
+        TexDesc.MipLevels = 1;
+        TexDesc.ArraySize = 1;
+        TexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; // @debug
+        TexDesc.SampleDesc.Count = 1;
+        TexDesc.SampleDesc.Quality = 0;
+        TexDesc.Usage = D3D11_USAGE_DEFAULT;
+        TexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        TexDesc.CPUAccessFlags = 0;
+        TexDesc.MiscFlags = 0;
+        
+        D3D11_SUBRESOURCE_DATA InitData;
+        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
+        InitData.pSysMem = &BMP->Data;
+        InitData.SysMemPitch = BMP->RowSize;
+        InitData.SysMemSlicePitch = 0;
+        
+        HRESULT HResult = State->Device->CreateTexture2D(&TexDesc, &InitData, &T.Texture);
+        if (FAILED(HResult)) 
+        {
+            printf("Failed to create the texture.\n");
+            return false;
+        }
+        
+        
+        //
+        // Shader view
+        D3D11_SHADER_RESOURCE_VIEW_DESC ShaderViewDesc;
+        ShaderViewDesc.Format = TexDesc.Format;
+        ShaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        ShaderViewDesc.Texture2D.MostDetailedMip = 0;
+        ShaderViewDesc.Texture2D.MipLevels = 1;
+        
+        HResult = State->Device->CreateShaderResourceView(T.Texture, 
+                                                          &ShaderViewDesc, 
+                                                          &T.ShaderView);
+        if (FAILED(HResult)) 
+        {
+            printf("Failed to create the shader view.\n");
+            return false;
+        }
+        
+        State->Textures.push_back(T);
+        Result = State->Textures.size() - 1;
+    }
+    
+    return Result;
+}
+
+
+void Free(dx_texture *Texture)
+{
+    if (Texture)
+    {
+        Texture->ShaderView ? Texture->ShaderView->Release() : 0;
+        Texture->Texture ? Texture->Texture->Release() : 0;
+    }
 }

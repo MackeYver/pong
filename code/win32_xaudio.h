@@ -32,36 +32,40 @@
 #include "win32_file_io.h"
 #include "audio.h"
 #include "wav.h"
+#include "resources.h"
 
 
 
 //
 // Voice
+//
+
 struct xaudio_voice
 {
-    wav_data WavData;
+    wav_data_index WavDataIndex = -1;
     IXAudio2SourceVoice *SourceVoice = nullptr;
     b32 ShouldLoop = false;
 };
-
-void Play(xaudio_voice *Voice);
-void Stop(xaudio_voice *Voice);
 
 
 
 //
 // Audio engine
+//
+
 struct xaudio
 {
+    resources *Resources;
     IXAudio2 *Device = nullptr;
     IXAudio2MasteringVoice *MasteringVoice = nullptr;
     std::vector<xaudio_voice> Voices;
 };
 
-void Init(xaudio *XAudio);
+void Init(xaudio *XAudio, resources *Resources);
 void Shutdown(xaudio *XAudio);
 
-voice_index Load(void *XAudio, char const *PathAndFilename);
+voice_index CreateVoice(void *XAudio, wav *Wav);
+b32 SetWavDataIndex(void *XAudio, voice_index VoiceIndex, wav_data_index WavDataIndex);
 
 void Play(void *XAudio, voice_index Index);
 void Stop(void *XAudio, voice_index Index);

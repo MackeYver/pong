@@ -37,10 +37,6 @@ typedef s32 voice_index;
 
 struct audio
 {
-    void Init()
-    {
-    }
-    
     void Shutdown()
     {
         StopAll();
@@ -61,19 +57,24 @@ struct audio
         _StopAll(AudioSystem);
     }
     
-    voice_index Load(char const *PathAndFilename)
-    {
-        voice_index Result = _Load(AudioSystem, PathAndFilename);
-        return Result;
-    }
-    
     void (*_Play)(void *, voice_index);
     void (*_Stop)(void *, voice_index);
     void (*_StopAll)(void *);
-    voice_index (*_Load)(void *, char const *PathAndFilename);
     
     void *AudioSystem;
 };
+
+
+static void Init(audio *Audio)
+{
+    
+}
+
+
+static void Shutdown(audio *Audio)
+{
+    
+}
 
 
 

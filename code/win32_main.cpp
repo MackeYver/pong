@@ -36,6 +36,7 @@
 #include "win32_xaudio.h"
 #include "win32_dx.h"
 #include "draw_calls.h"
+#include "resources.h"
 
 #include "game_main.h"
 
@@ -67,7 +68,6 @@ struct app_state
     HWND hWnd;
     
     xaudio XAudio;
-    draw_calls DrawCalls;
     dx_state DirectX;
     
     game_state GameState;
@@ -109,22 +109,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     
     //
-    // XAudio
+    // Set up function pointers
     //
     
     {
-        HRESULT Result = CoInitializeEx(0, COINIT_MULTITHREADED);
-        if (FAILED(Result))
-        {
-            assert(0);
-        }
-        
-        Init(&AppState.XAudio);
         AppState.GameState.Audio.AudioSystem = (void *)&AppState.XAudio;
+        AppState.GameState.Resources.Platform.AudioSystem = (void *)&AppState.XAudio;
+        AppState.GameState.Resources.Platform._CreateVoice = &CreateVoice;
+        AppState.GameState.Resources.Platform._SetWavDataIndex = &SetWavDataIndex;
+        
+        AppState.GameState.Resources.Platform.RenderSystem = (void *)&AppState.DirectX;
+        AppState.GameState.Resources.Platform._CreateTexture = &CreateTexture;
+        
         AppState.GameState.Audio._Play = &Play;
         AppState.GameState.Audio._Stop = &Stop;
         AppState.GameState.Audio._StopAll = &StopAll;
-        AppState.GameState.Audio._Load = &Load;
     }
     
     
@@ -145,7 +144,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     
     //
-    // Init DirectX 10
+    // XAudio
+    //
+    
+    {
+        HRESULT Result = CoInitializeEx(0, COINIT_MULTITHREADED);
+        if (FAILED(Result))
+        {
+            assert(0);
+        }
+        
+        Init(&AppState.XAudio, &AppState.GameState.Resources);
+    }
+    
+    
+    
+    //
+    // DirectX 10
     //
     {
         b32 BoolResult = Init(&AppState.DirectX, AppState.hWnd);
@@ -155,23 +170,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     
     
     //
-    // DirectWrite
-    //
-    
-#if 0
-    directwrite_state DirectWriteState;
-    InitDirectWrite(&DirectXState, &DirectWriteState);
-#endif
-    
-    
-    
-    //
     // Init game
     //
-    
-    Init(&AppState.DrawCalls, 1 << 20, AppState.DisplayMetrics);
-    AppState.GameState.DrawCalls = &AppState.DrawCalls;
-    Init(&AppState.GameState);
+    {
+        //
+        // Init subsystems
+        Init(&AppState.GameState.Resources);
+        Init(&AppState.GameState.DrawCalls, 1 << 20, AppState.DisplayMetrics);
+        Init(&AppState.GameState.Audio);
+        Init(&AppState.GameState.Dynamics);
+        
+        //
+        // Init game
+        Init(&AppState.GameState);
+    }
     
     
     
@@ -231,7 +243,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
         
         //
         // Process draw calls
-        ProcessDrawCalls(&AppState.DirectX, &AppState.DrawCalls);
+        ProcessDrawCalls(&AppState.DirectX, &AppState.GameState.DrawCalls);
         
         //
         // Timing
@@ -298,13 +310,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     
     Shutdown(&AppState.GameState);
-    Shutdown(&AppState.DrawCalls);
+    Shutdown(&AppState.GameState.Dynamics);
+    Shutdown(&AppState.GameState.Audio);
+    Shutdown(&AppState.GameState.DrawCalls);
+    Shutdown(&AppState.GameState.Resources);
     
     CoUninitialize();
     Shutdown(&AppState.XAudio);
-    
-    //ReleaseDirectWrite(&DirectWriteState);
-    //ReleaseDirectXState(&DirectXState);
     Shutdown(&AppState.DirectX);
     
     

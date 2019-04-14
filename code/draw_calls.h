@@ -29,6 +29,7 @@
 
 
 
+
 //
 // Draw call management
 //
@@ -76,6 +77,7 @@ void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
 enum draw_call_type
 {
     DrawCallType_FilledRectangle = 0,
+    DrawCallType_TexturedRectangle,
     DrawCallType_FilledCircle,
     DrawCallType_Text,
     
@@ -96,6 +98,16 @@ struct draw_call_filled_rectangle
     v4 Colour;
     v2 P;
     v2 Size;
+};
+
+
+struct draw_call_textured_rectangle
+{
+    draw_call_header Header;
+    v4 Colour;
+    v2 P;
+    v2 Size;
+    //texture_index TextureIndex;
 };
 
 

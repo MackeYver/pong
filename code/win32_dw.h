@@ -26,18 +26,10 @@
 #ifndef win32_dw__h
 #define win32_dw__h
 
-//#include <d3d11.h>
-//#include <dxgi.h>
-//#ifdef DEBUG
-//#include <dxgidebug.h>
-//#endif
-
 #include <dwrite.h> // DirectWrite (Dwrite.lib)
 #include <d2d1_1.h> // Direct2D    (D2d1_1.lib)
 
 #include "mathematics.h"
-
-
 
 struct dx_state; // found in win32_dx.h
 

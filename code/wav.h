@@ -57,16 +57,17 @@ struct wav_format
 };
 
 
-struct wav_data
+struct wav
 {
-    wav_format Format;
     u8 *Data = nullptr;
-    wav_type Type = WavType_Unknown;
     size_t DataSize = 0;
+    wav_type Type = WavType_Unknown;
+    wav_format Format;
 };
 
-b32 ParseWav(u8 *Data, size_t DataSize, wav_data *Output);
-void FreeWavData(wav_data *Data);
+b32 Load(char const *PathAndFilename, wav *Output);
+//b32 ParseWav(u8 *Data, size_t DataSize, wav *Output);
+void Free(wav *Data);
 
 
 

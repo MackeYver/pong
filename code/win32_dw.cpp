@@ -25,6 +25,14 @@
 #include "win32_dw.h"
 #include "win32_dx.h"
 
+#ifdef DEBUG
+#include <assert.h>
+#include <stdio.h>
+#else
+#define assert(x)
+#define printf(x)
+#endif
+
 
 b32 Init(dw_state *State, dx_state *DXState)
 {
@@ -212,7 +220,7 @@ HRESULT EndDraw(dw_state *State)
 }
 
 
-void DrawTextW(dw_state *State, v2 P, wchar_t const *String)
+void DrawText(dw_state *State, v2 P, wchar_t const *String)
 {
     assert(State && State->DeviceContext);
     assert(String);

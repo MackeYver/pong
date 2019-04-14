@@ -59,16 +59,12 @@ void End(game_state *State);
 void Init(game_state *State)
 {
     assert(State);
-    assert(State->DrawCalls);
     
     State->GameMode = GameMode_Inactive;
     
     //
-    // Audio
+    // Load audio
     {
-        audio *Audio = &State->Audio;
-        Audio->Init();
-        
         char const *PathAndFilename[] = 
         {
             "data\\theme.wav",
@@ -79,25 +75,31 @@ void Init(game_state *State)
         
         for (u32 Index = 0; Index < AudioVoice_Count; ++Index)
         {
-            voice_index VIndex = Audio->Load(PathAndFilename[Index]);
+            voice_index VIndex = LoadWAV(&State->Resources, PathAndFilename[Index]);
             assert(VIndex >= 0);
-            State->AudioVoices[Index] = VIndex;
+            State->AudioIndices[Index] = VIndex;
         }
         
-        Audio->Play(AudioVoice_Theme);
+        State->Audio.Play(AudioVoice_Theme);
+    }
+    
+    
+    //
+    // Load textures
+    {
+        // TODO(Marcus): Implement!
     }
     
     
     //
     // Game state
-    State->BackgroundColour = V4(0.0f, 0.0f, 1.0f, 1.0f);
+    State->BackgroundColour = V4(0.0f, 0.0f, 1.0f, 1.0f); // TODO(Marcus): currently unused!
     State->PlayerCount = 0;
     
     
     //
-    // Init Dynamics and set data (hardcoded)
+    // Setup entities (hardcoded for now)
     {
-        Init(&State->Dynamics);
         
         //
         // Players
@@ -150,8 +152,8 @@ void Init(game_state *State)
         //
         // Borders
         {
-            f32 const Width  = (f32)State->DrawCalls->DisplayMetrics.WindowWidth;
-            f32 const Height = (f32)State->DrawCalls->DisplayMetrics.WindowHeight;
+            f32 const Width  = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
+            f32 const Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
             
             f32 const vh = 8.0f;  // Visible height
             f32 const h = 160.0f; // Actual height (larger due to sloppy collision detection)
@@ -195,7 +197,7 @@ void Update(game_state *State, f32 dt)
 {
     assert(State);
     assert(dt > 0.0f);
-    assert(State->DrawCalls);
+    
     
     //
     // Process inputs
@@ -276,7 +278,7 @@ void Update(game_state *State, f32 dt)
         {
             Score(State, 1);
         }
-        else if (Body->P.x > State->DrawCalls->DisplayMetrics.WindowWidth)
+        else if (Body->P.x > State->DrawCalls.DisplayMetrics.WindowWidth)
         {
             Score(State, 0);
         }
@@ -293,8 +295,7 @@ void Shutdown(game_state *State)
 {
     assert(State);
     
-    Shutdown(&State->Dynamics);
-    State->Audio.Shutdown();
+    
 }
 
 
@@ -326,7 +327,6 @@ void ServeBoll(game_state *State)
     
     body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
     Body->F = V2(Cos(Angle), Sin(Angle)) * 30000.0f;
-    Body->F = V2(1.0f, 0.0f) * 30000.0f;
 }
 
 
@@ -408,7 +408,7 @@ void RenderBodyAsCircle(draw_calls *DrawCalls, body *Body, v4 Colour)
 
 void RenderScores(game_state *State)
 {
-    draw_calls *DrawCalls = State->DrawCalls;
+    draw_calls *DrawCalls = &State->DrawCalls;
     
     f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
     f32 const Height = (f32)DrawCalls->DisplayMetrics.WindowHeight;
@@ -417,19 +417,18 @@ void RenderScores(game_state *State)
     // Scores
     wchar_t ScoreString[4];
     _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[0].Score);
-    PushText(State->DrawCalls, V2(0.5f * Width - 70.0f, 48.0f), ScoreString);
+    PushText(DrawCalls, V2(0.5f * Width - 70.0f, 48.0f), ScoreString);
     
     _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[1].Score);
-    PushText(State->DrawCalls, V2(0.5f * Width + 70.0f, 48.0f), ScoreString);
+    PushText(DrawCalls, V2(0.5f * Width + 70.0f, 48.0f), ScoreString);
 }
 
 
 void Render(game_state *State)
 {
     assert(State);
-    assert(State->DrawCalls);
     
-    draw_calls *DrawCalls = State->DrawCalls;
+    draw_calls *DrawCalls = &State->DrawCalls;
     
     f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
     f32 const Height = (f32)DrawCalls->DisplayMetrics.WindowHeight;
@@ -455,21 +454,21 @@ void Render(game_state *State)
             f32  y = 200.0f;
             f32 dy =  70.0f;
             
-            PushText(State->DrawCalls, V2(0.5f * Width, y)            , L"Pong!");
-            PushText(State->DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 1 to start a one player game");
-            PushText(State->DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 2 to start a two player game");
+            PushText(DrawCalls, V2(0.5f * Width, y)            , L"Pong!");
+            PushText(DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 1 to start a one player game");
+            PushText(DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 2 to start a two player game");
         } break;
         
         case GameMode_Paused:
         {
-            PushText(State->DrawCalls, V2(0.5f * Width, 200.0f), L"Paused!");
+            PushText(DrawCalls, V2(0.5f * Width, 200.0f), L"Paused!");
         } break;
         
         case GameMode_Scored:
         {
-            PushText(State->DrawCalls, V2(0.5f * Width, 200.0f), L"Score!");
-            PushText(State->DrawCalls, V2(0.5f * Width, 235.0f), L"------");
-            PushText(State->DrawCalls, V2(0.5f * Width, 290.0f), L"Press P to resume");
+            PushText(DrawCalls, V2(0.5f * Width, 200.0f), L"Score!");
+            PushText(DrawCalls, V2(0.5f * Width, 235.0f), L"------");
+            PushText(DrawCalls, V2(0.5f * Width, 290.0f), L"Press P to resume");
         } break;
     }
 }
@@ -601,8 +600,8 @@ void ProcessInput(game_state *State)
 
 void Reset(game_state *State)
 {
-    f32 const Width  = (f32)State->DrawCalls->DisplayMetrics.WindowWidth;
-    f32 const Height = (f32)State->DrawCalls->DisplayMetrics.WindowHeight;
+    f32 const Width  = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
+    f32 const Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
     
     
     //
