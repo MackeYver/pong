@@ -113,10 +113,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
     //
     
     {
+        AppState.GameState.Resources.Platform.LoadEntireFile = &win32_ReadFile;
+        
         AppState.GameState.Audio.AudioSystem = (void *)&AppState.XAudio;
         AppState.GameState.Resources.Platform.AudioSystem = (void *)&AppState.XAudio;
         AppState.GameState.Resources.Platform._CreateVoice = &CreateVoice;
-        AppState.GameState.Resources.Platform._SetWavDataIndex = &SetWavDataIndex;
+        AppState.GameState.Resources.Platform._SetWavResourceIndex = &SetWavResourceIndex;
         
         AppState.GameState.Resources.Platform.RenderSystem = (void *)&AppState.DirectX;
         AppState.GameState.Resources.Platform._CreateTexture = &CreateTexture;

@@ -276,71 +276,29 @@ b32 ParseDATA(wav_data_info *Data, wav *Output)
 // "Public" functions
 //
 
-b32 Load(char const *PathAndFilename, wav *Output)
+b32 ParseWAV(u8 *Data, size_t DataSize, wav *Output)
 {
     b32 Result = false;
     
-    if (Output)
+    if (Output && Data && DataSize > 0)
     {
-        u8 *Data = nullptr;
-        size_t DataSize;
+        wav_data_info DataInfo;
+        DataInfo.StartOfBuffer = Data;
+        DataInfo.CurrentIndex = 0;
+        DataInfo.SizeOfBuffer = DataSize;
         
-        Result = win32_ReadFile(PathAndFilename, &Data, &DataSize);
+        Result = ParseRIFF(&DataInfo, Output);
+        assert(Result);
         
-        if (Result && Data)
-        {
-            wav_data_info DataInfo;
-            DataInfo.StartOfBuffer = Data;
-            DataInfo.CurrentIndex = 0;
-            DataInfo.SizeOfBuffer = DataSize;
-            
-            Result = ParseRIFF(&DataInfo, Output);
-            assert(Result);
-            
-            Result = ParseFMT_(&DataInfo, Output);
-            assert(Result);
-            
-            Result = ParseDATA(&DataInfo, Output);
-            assert(Result);
-            
-            if (Data)
-            {
-                free(Data);
-                Data = nullptr;
-                DataSize = 0;
-            }
-        }
+        Result = ParseFMT_(&DataInfo, Output);
+        assert(Result);
+        
+        Result = ParseDATA(&DataInfo, Output);
+        assert(Result);
     }
     
     return Result;
 }
-
-
-#if 0
-b32 ParseWav(u8 *InputData, size_t InputDataSize, wav *Output)
-{
-    assert(InputData);
-    assert(InputDataSize > 0);
-    assert(Output);
-    
-    wav_data_info Data;
-    Data.StartOfBuffer = InputData;
-    Data.CurrentIndex = 0;
-    Data.SizeOfBuffer = InputDataSize;
-    
-    b32 Result = false;
-    Result = ParseRIFF(&Data, Output);
-    assert(Result);
-    
-    Result = ParseFMT_(&Data, Output);
-    assert(Result);
-    
-    Result = ParseDATA(&Data, Output);
-    assert(Result);
-    
-    return Result;
-}
-#endif
 
 
 void Free(wav *Data)

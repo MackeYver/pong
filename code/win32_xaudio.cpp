@@ -141,7 +141,7 @@ void Shutdown(xaudio *XAudio)
     {
         Voice.SourceVoice->Stop();
         Voice.SourceVoice->DestroyVoice();
-        Voice.WavDataIndex = -1;
+        Voice.WavResourceIndex = -1;
     }
     XAudio->Voices.clear();
     
@@ -193,7 +193,7 @@ voice_index CreateVoice(void *X, wav *WAV)
 }
 
 
-b32 SetWavDataIndex(void *X, voice_index VoiceIndex, wav_data_index WavDataIndex)
+b32 SetWavResourceIndex(void *X, voice_index VoiceIndex, wav_resource_index WavResourceIndex)
 {
     b32 Result = false;
     
@@ -202,7 +202,7 @@ b32 SetWavDataIndex(void *X, voice_index VoiceIndex, wav_data_index WavDataIndex
     if ((VoiceIndex >= 0) && ((u32)VoiceIndex < State->Voices.size()))
     {
         xaudio_voice *Voice = &State->Voices[VoiceIndex];
-        Voice->WavDataIndex = WavDataIndex;
+        Voice->WavResourceIndex = WavResourceIndex;
         Result = true;
     }
     
@@ -247,9 +247,9 @@ void Play(void *AudioSystem, voice_index Index)
     {
         xaudio_voice *Voice = &State->Voices[Index];
         
-        wav_data *WavData = GetWavData(State->Resources, Voice->WavDataIndex);
-        assert(WavData);
-        wav *WAV = &WavData->Wav;
+        wav_resource *WavResource = GetWavResource(State->Resources, Voice->WavResourceIndex);
+        assert(WavResource);
+        wav *WAV = &WavResource->Wav;
         
         SubmitSourceBuffer(Voice, WAV); // TODO(Marcus): Find out if we really need to submit audio data evertime we play!
         Voice->SourceVoice->Start();

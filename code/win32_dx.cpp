@@ -28,8 +28,10 @@
 
 #ifdef DEBUG
 #include <stdio.h>
+#include <assert.h>
 #else
 #define printf(...)
+#define assert(x)
 #endif
 
 
@@ -259,11 +261,10 @@ b32 Init(dx_state *State, HWND hWnd)
     {
         //
         // Basic shader (no texture or lighting)
-        //D3D11_INPUT_ELEMENT_DESC InputElements = {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0};
         D3D11_INPUT_ELEMENT_DESC InputElements[] =
         {
-            {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D11_INPUT_PER_VERTEX_DATA, 0}
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
         };
         
         // Vertex shader
@@ -663,25 +664,25 @@ b32 Init(dx_state *State, HWND hWnd)
     // Fullscreen quad, used to render the RenderTargetTexture to the screen
     //
     {
-        struct t
+        struct pt
         {
-            v2 P;
+            v3 P;
             v2 T;
         };
         
-        t Vertices[] =
+        pt Vertices[] =
         {
-            {{-1.0f, -1.0f}, {0.0f, 1.0f}},
-            {{ 1.0f,  1.0f}, {1.0f, 0.0f}},
-            {{-1.0f,  1.0f}, {0.0f, 0.0f}},
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
+            {{ 1.0f,  1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f}},
             
-            {{-1.0f, -1.0f}, {0.0f, 1.0f}},
-            {{ 1.0f, -1.0f}, {1.0f, 1.0f}},
-            {{ 1.0f,  1.0f}, {1.0f, 0.0f}},
+            {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
+            {{ 1.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+            {{ 1.0f,  1.0f, 0.0f}, {1.0f, 0.0f}},
         };
         
         u32 VertexCount = 6;
-        size_t VertexSize = sizeof(t);
+        size_t VertexSize = sizeof(pt);
         size_t Size = VertexCount * VertexSize;
         
         D3D11_BUFFER_DESC BufferDesc;
@@ -713,19 +714,25 @@ b32 Init(dx_state *State, HWND hWnd)
     // Vertex buffer for a 1x1 rectangle
     // - @debug
     {
-        v4 Vertices[] =
+        struct pt
         {
-            {-0.5f, -0.5f, 0.0f, 1.0f},
-            { 0.5f,  0.5f, 1.0f, 0.0f},
-            {-0.5f,  0.5f, 0.0f, 0.0f},
+            v3 P;
+            v2 T;
+        };
+        
+        pt Vertices[] =
+        {
+            {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},
+            {{ 0.5f,  0.5f, 1.0f}, {1.0f, 0.0f}},
+            {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f}},
             
-            {-0.5f, -0.5f, 0.0f, 1.0f},
-            { 0.5f, -0.5f, 1.0f, 1.0f},
-            { 0.5f,  0.5f, 1.0f, 0.0f},
+            {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},
+            {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}},
+            {{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f}},
         };
         
         u32 VertexCount = 6;
-        size_t VertexSize = sizeof(v4);
+        size_t VertexSize = sizeof(pt);
         size_t Size = VertexCount * VertexSize;
         
         D3D11_BUFFER_DESC BufferDesc;
@@ -757,12 +764,18 @@ b32 Init(dx_state *State, HWND hWnd)
     // Vertex buffer for a circle
     // - @debug, inefficient!
     {
+        struct pt
+        {
+            v3 P;
+            v2 T;
+        };
+        
         u32 SliceCount = 32;
         u32 VertexCount = 3 * SliceCount;
-        size_t VertexSize = sizeof(v4);
+        size_t VertexSize = sizeof(pt);
         size_t Size = VertexCount * VertexSize;
         
-        v4*Vertices = static_cast<v4 *>(malloc(Size));
+        pt* Vertices = static_cast<pt *>(malloc(Size));
         assert(Vertices);
         
         f32 Theta = Tau32 / (f32)SliceCount;
@@ -770,17 +783,17 @@ b32 Init(dx_state *State, HWND hWnd)
         u32 VertexIndex = 0;
         for (u32 Index = 0; Index < SliceCount; ++Index)
         {
-            Vertices[VertexIndex++] = V4(0.0f, 0.0f, 0.5f, 0.5f);
+            Vertices[VertexIndex++] = {{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}};
             
             f32 x = Cos(CurrAngle);
             f32 y = Sin(CurrAngle);
-            Vertices[VertexIndex++] = V4(x, y, (x + 1.0f) / 2.0f, (1.0f - y) / 2.0f);
+            Vertices[VertexIndex++] = {{x, y, 0.0f}, {(x + 1.0f) / 2.0f, (1.0f - y) / 2.0f}};
             
             CurrAngle += Theta;
             
             x = Cos(CurrAngle);
             y = Sin(CurrAngle);
-            Vertices[VertexIndex++] = V4(x, y, (x + 1.0f) / 2.0f, (1.0f - y) / 2.0f);
+            Vertices[VertexIndex++] = {{x, y, 0.0f}, {(x + 1.0f) / 2.0f, (1.0f - y) / 2.0f}};
         }
         assert(VertexIndex == VertexCount);
         
@@ -929,7 +942,7 @@ void EndRendering(dx_state *State)
     
     //
     // Render the fullscreen quad with the RenderTargetTexture as texture
-    size_t Stride = sizeof(v4);
+    size_t Stride = sizeof(v3) + sizeof(v2);
     size_t Offset = 0;
     DC->IASetVertexBuffers(0, 1, &State->VertexBufferFullscreen, &Stride, &Offset);
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -957,18 +970,18 @@ void RenderFilledRectangle(dx_state *State, v2 Po, v2 Size, v4 Colour)
     
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    size_t Stride = sizeof(v4);
+    size_t Stride = sizeof(v3) + sizeof(v2);
     size_t Offset = 0;
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset); 
+    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset);
     DC->Draw(6, 0);
 }
 
 
-void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, texture_index TextureIndex, v4 Colour)
+void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, texture_index Index, v4 Colour)
 {
-    assert((TextureIndex >= 0) && ((u32)TextureIndex < State->Textures.size()));
+    assert((Index >= 0) && ((u32)Index < State->Textures.size()));
     
     State->ShaderConstants.Colour = Colour;
     State->ShaderConstants.ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
@@ -976,10 +989,10 @@ void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, texture_index Text
     
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    size_t Stride = sizeof(v4);
+    size_t Stride = sizeof(v3) + sizeof(v2);
     size_t Offset = 0;
     
-    dx_texture *Texture = &State->Textures[TextureIndex];
+    dx_texture *Texture = &State->Textures[Index];
     State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
@@ -998,7 +1011,7 @@ void RenderFilledCircle(dx_state *State, v2 Po, f32 Radius, v4 Colour)
     
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    size_t Stride = sizeof(v4);
+    size_t Stride = sizeof(v3) + sizeof(v2);
     size_t Offset = 0;
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
@@ -1007,7 +1020,7 @@ void RenderFilledCircle(dx_state *State, v2 Po, f32 Radius, v4 Colour)
 }
 
 
-void RenderTexturedCircle(dx_state *State, v2 Po, f32 Radius, texture_index TextureIndex, v4 Colour)
+void RenderTexturedCircle(dx_state *State, v2 Po, f32 Radius, texture_index Index, v4 Colour)
 {
     State->ShaderConstants.Colour = Colour;
     State->ShaderConstants.ObjectToWorld = M4Scale(Radius, Radius, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
@@ -1015,10 +1028,10 @@ void RenderTexturedCircle(dx_state *State, v2 Po, f32 Radius, texture_index Text
     
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    size_t Stride = sizeof(v4);
+    size_t Stride = sizeof(v3) + sizeof(v2);
     size_t Offset = 0;
     
-    dx_texture *Texture = &State->Textures[TextureIndex];
+    dx_texture *Texture = &State->Textures[Index];
     State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug

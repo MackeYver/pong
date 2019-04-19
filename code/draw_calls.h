@@ -64,10 +64,10 @@ void Shutdown(draw_calls *DrawCalls);
 //
 
 void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour = v4_one);
-void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index TextureIndex, v4 Colour = v4_one);
+void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index Index, v4 Colour = v4_one);
 
 void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour = v4_one);
-void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index TextureIndex, v4 Colour = v4_one);
+void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index Index, v4 Colour = v4_one);
 
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
 

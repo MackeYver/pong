@@ -35,6 +35,8 @@
 // - https://www.fileformat.info/format/bmp/egff.htm
 //
 
+
+
 #pragma pack(push, 1)
 struct bitmap_file_header
 {
@@ -45,6 +47,7 @@ struct bitmap_file_header
     DWORD DataOffset; // Offset to where the pixel data begins
 };
 #pragma pack(pop)
+
 
 
 #pragma pack(push, 1)
@@ -64,79 +67,6 @@ struct dib_header // This is really v3, for now we'll only support this one.
 }; // size 40
 #pragma pack(pop)
 
-#if 0
-struct dib_header_v4
-{
-    u32 HeaderSize;
-    s32 Width;
-    s32 Height;
-    u16 ColourPLaneCount;
-    u16 BitsPerPixel;
-    u32 CompressionMethod;
-    u32 PixelDataSize;
-    s32 PixelPerMeterX;
-    s32 PixelPerMeterY;
-    u32 PaletteColourCount;
-    u32 ImportantColourCount;
-    
-    
-	u32 RedMask;       /* Mask identifying bits of red component */
-	u32 GreenMask;     /* Mask identifying bits of green component */
-	u32 BlueMask;      /* Mask identifying bits of blue component */
-	u32 AlphaMask;     /* Mask identifying bits of alpha component */
-	u32 CSType;        /* Color space type */
-	u32 RedX;          /* X coordinate of red endpoint */
-	u32 RedY;          /* Y coordinate of red endpoint */
-	u32 RedZ;          /* Z coordinate of red endpoint */
-	u32 GreenX;        /* X coordinate of green endpoint */
-	u32 GreenY;        /* Y coordinate of green endpoint */
-	u32 GreenZ;        /* Z coordinate of green endpoint */
-	u32 BlueX;         /* X coordinate of blue endpoint */
-	u32 BlueY;         /* Y coordinate of blue endpoint */
-	u32 BlueZ;         /* Z coordinate of blue endpoint */
-	u32 GammaRed;      /* Gamma red coordinate scale value */
-	u32 GammaGreen;    /* Gamma green coordinate scale value */
-	u32 GammaBlue;     /* Gamma blue coordinate scale value */
-}; // size 108
-
-
-struct dib_header_v5
-{
-    u32 HeaderSize;
-    s32 Width;
-    s32 Height;
-    u16 ColourPLaneCount;
-    u16 BitsPerPixel;
-    u32 CompressionMethod;
-    u32 ImageSize; // 0 if Compression == 0?
-    s32 PixelPerMeterX;
-    s32 PixelPerMeterY;
-    u32 PaletteColourCount;
-    u32 ImportantColourCount;
-    
-	u32 RedMask;       /* Mask identifying bits of red component */
-	u32 GreenMask;     /* Mask identifying bits of green component */
-	u32 BlueMask;      /* Mask identifying bits of blue component */
-	u32 AlphaMask;     /* Mask identifying bits of alpha component */
-	u32 CSType;        /* Color space type */
-	u32 RedX;          /* X coordinate of red endpoint */
-	u32 RedY;          /* Y coordinate of red endpoint */
-	u32 RedZ;          /* Z coordinate of red endpoint */
-	u32 GreenX;        /* X coordinate of green endpoint */
-	u32 GreenY;        /* Y coordinate of green endpoint */
-	u32 GreenZ;        /* Z coordinate of green endpoint */
-	u32 BlueX;         /* X coordinate of blue endpoint */
-	u32 BlueY;         /* Y coordinate of blue endpoint */
-	u32 BlueZ;         /* Z coordinate of blue endpoint */
-	u32 GammaRed;      /* Gamma red coordinate scale value */
-	u32 GammaGreen;    /* Gamma green coordinate scale value */
-	u32 GammaBlue;     /* Gamma blue coordinate scale value */
-    u32 Intent;
-    u32 ProfileData;
-    u32 ProfileSize;
-    u32 V5Reserved;
-}; // size 123
-#endif
 
 
 struct bmp
@@ -147,8 +77,7 @@ struct bmp
     size_t DataSize = 0;
 };
 
-
-b32 Load(char const *PathAndFilename, bmp *Output);
+b32 ParseBMP(u8 *Data, size_t DataSize, bmp *Output);
 void Free(bmp *Bmp);
 
 

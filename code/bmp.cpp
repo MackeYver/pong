@@ -29,58 +29,50 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef DEBUG
+#include <assert.h>
+#else
+#define assert(x)
+#endif
 
 
-b32 Load(char const *PathAndFilename, bmp *Output)
+
+b32 ParseBMP(u8 *Data, size_t DataSize, bmp *Output)
 {
     b32 Result = false;
     
-    if (Output)
+    if (Output && Data && DataSize > 0)
     {
-        u8 *Data;
-        size_t DataSize;
-        
-        b32 BoolResult = win32_ReadFile(PathAndFilename, &Data, &DataSize);
-        if (BoolResult && Data)
+        bitmap_file_header *BFHeader = reinterpret_cast<bitmap_file_header *>(Data);
+        if (BFHeader->MagicNumber == 0x4d42)
         {
-            bitmap_file_header *BFHeader = reinterpret_cast<bitmap_file_header *>(Data);
-            if (BFHeader->MagicNumber == 0x4d42)
+            dib_header *Header = reinterpret_cast<dib_header *>(Data + sizeof(bitmap_file_header));
+            if ((Header->HeaderSize == 40) && (Header->CompressionMethod == 0)) // we only support v3 for now
             {
-                dib_header *Header = reinterpret_cast<dib_header *>(Data + sizeof(bitmap_file_header));
-                if ((Header->HeaderSize == 40) && (Header->CompressionMethod == 0)) // we only support v3 for now
-                {
-                    memcpy(&Output->Header, Data + sizeof(bitmap_file_header), sizeof(dib_header));
-                    
-                    Output->Header.Height = Abs(Output->Header.Height);
-                    
-                    Output->RowSize = 4 * (size_t)(((f32)(Header->BitsPerPixel * Output->Header.Width) / 32.0f) + 0.5f);
-                    Output->DataSize = Output->RowSize * Output->Header.Height;
-                    assert(Output->DataSize > 0);
-                    
-                    Output->Data = static_cast<u8 *>(malloc(Output->DataSize));
-                    assert(Output->Data);
-                    memcpy(Output->Data, 
-                           Data + sizeof(bitmap_file_header) + sizeof(dib_header), 
-                           Output->DataSize);
-                    
-                    Result = true;
-                }
-                else
-                {
-                    printf("%s: %s has an invalid header, the size of the header is not 40 bytes\n", __FUNCTION__, PathAndFilename);
-                }
+                memcpy(&Output->Header, Data + sizeof(bitmap_file_header), sizeof(dib_header));
+                
+                Output->Header.Height = Abs(Output->Header.Height);
+                
+                Output->RowSize = 4 * (size_t)(((f32)(Header->BitsPerPixel * Output->Header.Width) / 32.0f) + 0.5f);
+                Output->DataSize = Output->RowSize * Output->Header.Height;
+                assert(Output->DataSize > 0);
+                
+                Output->Data = static_cast<u8 *>(malloc(Output->DataSize));
+                assert(Output->Data);
+                memcpy(Output->Data, 
+                       Data + sizeof(bitmap_file_header) + sizeof(dib_header), 
+                       Output->DataSize);
+                
+                Result = true;
             }
             else
             {
-                printf("%s: file %s is not a bmp\n", __FUNCTION__, PathAndFilename);
+                printf("%s: File has an invalid header, the size of the header is not 40 bytes\n", __FUNCTION__);
             }
-            
-            free(Data);
-            DataSize = 0;
         }
         else
         {
-            printf("%s: failed to read file %s\n", __FUNCTION__, PathAndFilename);
+            printf("%s: file is not a bmp\n", __FUNCTION__);
         }
     }
     

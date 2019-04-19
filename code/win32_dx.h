@@ -30,14 +30,11 @@
 
 #ifdef DEBUG
 #include <dxgidebug.h>
-//#include <stdio.h>
 #endif
 
-//#include <dwrite.h> // DirectWrite (Dwrite.lib)
-//#include <d2d1_1.h> // Direct2D    (D2d1_1.lib)
 #include <vector> // @debug
 
-//#include "mathematics.h"
+#include "mathematics.h"
 #include "draw_calls.h"
 #include "win32_dw.h"
 #include "resources.h"

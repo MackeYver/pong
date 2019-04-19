@@ -29,22 +29,27 @@
 
 #include "bmp.h"
 #include "wav.h"
+#include "mesh.h"
+#include "platform.h"
 
 
+
+struct resources;
 
 //
 // Textures
-// -@debug
 //
 
 typedef s32 texture_index;
-typedef s32 bmp_data_index;
+typedef s32 bmp_resource_index;
 
-struct bmp_data
+struct bmp_resource
 {
     bmp Bmp = {};
     texture_index TextureIndex = -1;
 };
+
+texture_index LoadBMP(resources *Resources, char const *PathAndFileName);
 
 
 
@@ -54,13 +59,35 @@ struct bmp_data
 // 
 
 typedef s32 voice_index;
-typedef s32 wav_data_index; 
+typedef s32 wav_resource_index; 
 
-struct wav_data
+struct wav_resource
 {
     wav Wav = {};
     voice_index VoiceIndex = -1;
 };
+
+voice_index LoadWAV(resources *Resources, char const *PathAndFileName);
+wav_resource *GetWavResource(resources *Resources, wav_resource_index WavDataIndex);
+
+
+
+
+//
+// Mesh
+//
+
+typedef s32 mesh_index;
+typedef s32 mesh_resource_index;
+
+struct mesh_resource
+{
+    mesh Mesh = {};
+    mesh_index MeshIndex = -1;
+};
+
+mesh_index LoadPLY(resources *Resources, char const *PathAndFilename);
+
 
 
 
@@ -68,57 +95,18 @@ struct wav_data
 // Resource management
 //
 
-// function pointers to platform specific implementations of render- and audio-systems
-struct resources_platform
-{
-    //
-    // Audio
-    void *AudioSystem;
-    
-    voice_index (*_CreateVoice)(void *, wav *);
-    voice_index CreateVoice(wav *WAV)
-    {
-        voice_index Result = _CreateVoice(AudioSystem, WAV);
-        return Result;
-    }
-    
-    b32 (*_SetWavDataIndex)(void *, voice_index, wav_data_index);
-    b32 SetWavDataIndex(voice_index VoiceIndex, wav_data_index WavDataIndex)
-    {
-        b32 Result = _SetWavDataIndex(AudioSystem, VoiceIndex, WavDataIndex);
-        return Result;
-    }
-    
-    //
-    // Rendering
-    void *RenderSystem;
-    
-    texture_index (*_CreateTexture)(void *, bmp *BMP);
-    
-    texture_index CreateTexture(bmp *BMP)
-    {
-        texture_index Result = _CreateTexture(RenderSystem, BMP);
-        return Result;
-    }
-};
-
-
 struct resources
 {
-    resources_platform Platform;
+    platform Platform;
     
-    std::vector<bmp_data> BmpData;
-    std::vector<wav_data> WavData;
+    std::vector<bmp_resource> Bmps;
+    std::vector<wav_resource> Wavs;
+    std::vector<mesh_resource> Meshes;
 };
-
 
 void Init(resources *Resources);
 void Shutdown(resources *Resources);
 
-texture_index LoadBMP(resources *Resources, char const *PathAndFileName);
-
-voice_index LoadWAV(resources *Resources, char const *PathAndFileName);
-wav_data *GetWavData(resources *Resources, wav_data_index WavDataIndex);
 
 
 #endif

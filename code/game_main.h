@@ -120,29 +120,24 @@ struct game_state
     draw_calls DrawCalls;
     texture_index TextureHandles[TextureHandle_Count];
     
-    
     //
     // Audio
     audio Audio;
     voice_index AudioHandles[AudioHandle_Count];
     
-    
     //
     // Input
     std::map<u8, u8> PressedKeys; // TODO(Marcus): Implement proper input handling and processing.
     
-    
     //
     // Physics
     dynamics_state Dynamics;
-    
     
     //
     // Entities
     player Players[2];
     border Borders[2];
     ball Ball;
-    
     
     //
     // Game data

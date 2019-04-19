@@ -112,7 +112,7 @@ void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour)
 }
 
 
-void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index TextureIndex, v4 Colour)
+void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index Index, v4 Colour)
 {
     assert(DrawCalls);
     assert(DrawCalls->Memory);
@@ -127,7 +127,7 @@ void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index T
     DrawCall->Colour = Colour;
     DrawCall->P = P;
     DrawCall->Size = Size;
-    DrawCall->TextureIndex = TextureIndex;
+    DrawCall->TextureIndex = Index;
 }
 
 
@@ -149,7 +149,7 @@ void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour)
 }
 
 
-void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index TextureIndex, v4 Colour)
+void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index Index, v4 Colour)
 {
     assert(DrawCalls);
     assert(DrawCalls->Memory);
@@ -164,7 +164,7 @@ void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index T
     DrawCall->Colour = Colour;
     DrawCall->P = P;
     DrawCall->Radius = Radius;
-    DrawCall->TextureIndex = TextureIndex;
+    DrawCall->TextureIndex = Index;
 }
 
 

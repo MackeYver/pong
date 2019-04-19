@@ -24,6 +24,12 @@
 
 #include "dynamics.h"
 
+#ifdef DEBUG
+#include <assert.h>
+#else
+#define assert(x)
+#endif
+
 
 
 //
@@ -188,12 +194,12 @@ void ResolveCollisions(dynamics_state *State, std::vector<collision_info>& Input
                 ShareA = Body[0]->InverseMass / TotalInverseMass;
             }
             
-            f32 dP = Collision.Depth + 0.001f; // Nudge it a bit further so that it is not colliding anymore
+            f32 dP = Collision.Depth + 0.005f; // Nudge it a bit further so that it is not colliding anymore
             f32 dPa = ShareA * dP;
             f32 dPb = dP - dPa;
             
-            Body[0]->P += Hadamard(dPMaska, dPa * -Collision.N);
-            Body[1]->P += Hadamard(dPMaskb, dPb *  Collision.N);
+            Body[0]->P -= Hadamard(dPMaska, dPa * Collision.N);
+            Body[1]->P += Hadamard(dPMaskb, dPb * Collision.N);
         }
         
         

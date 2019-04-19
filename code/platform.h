@@ -22,52 +22,62 @@
 // SOFTWARE.
 //
 
-#ifndef wav__h
-#define wav__h
+#ifndef platform__h
+#define platform__h
 
+#include "resources.h"
 #include "types.h"
 
-
-//
-// Currently this only supports: 
-// - wave format
-// - a canonical file format (one RIFF chunk, one FMT chunk and one DATA chunk)
-//
+struct wav;
+struct bmp;
+struct mesh;
 
 
-enum wav_type
+
+// function pointers to platform specific implementations of render- and audio-systems
+struct platform
 {
-    WavType_Wave = 0,
-    WavType_XWMA,
-    WavType_Unknown,
+    b32 (*LoadEntireFile)(char const *PathAndFilename, u8 **OutputData, size_t *OutputDataSize);
     
-    WavType_Count,
+    
+    //
+    // Audio
+    void *AudioSystem;
+    
+    s32 (*_CreateVoice)(void *, wav *);
+    s32 CreateVoice(wav *WAV)
+    {
+        s32 Result = _CreateVoice(AudioSystem, WAV);
+        return Result;
+    }
+    
+    b32 (*_SetWavResourceIndex)(void *, s32, s32);
+    b32 SetWavResourceIndex(s32 VoiceIndex, s32 WavResourceIndex)  
+    {
+        b32 Result = _SetWavResourceIndex(AudioSystem, VoiceIndex, WavResourceIndex);
+        return Result;
+    }
+    
+    
+    //
+    // Rendering
+    void *RenderSystem;
+    
+    s32 (*_CreateTexture)(void *, bmp *BMP);
+    s32 CreateTexture(bmp *BMP)
+    {
+        s32 Result = _CreateTexture(RenderSystem, BMP);
+        return Result;
+    }
+    
+    s32 (*_CreateMesh)(void *, mesh *Mesh);
+    s32 CreateMesh(mesh *Mesh)
+    {
+        s32 Result = _CreateMesh(RenderSystem, Mesh);
+        return Result;
+    }
 };
 
 
-struct wav_format
-{
-    u16 Compression;
-    u16 NumberOfChannels;
-    u32 SampleRate;
-    u32 AverageBytesPerSecond;
-    u16 BlockAlign;
-    u16 SignificantBitsPerSample;
-    u16 ExtraFormatBytes;
-};
 
-
-struct wav
-{
-    u8 *Data = nullptr;
-    size_t DataSize = 0;
-    wav_type Type = WavType_Unknown;
-    wav_format Format;
-};
-
-b32 ParseWAV(u8 *Data, size_t DataSize, wav *Output);
-void Free(wav *Data);
-
-
-
-#endif // #ifndef wav__h
+#endif

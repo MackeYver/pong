@@ -22,45 +22,52 @@
 // SOFTWARE.
 //
 
-#include "common.h"
-
-
-struct vs_input
-{
-    float3 P : POSITION0;
-    float3 T : TEXCOORD0;
-};
-
-struct ps_input
-{
-    float4 P : SV_Position;
-    float2 T : TEXCOORD0;
-};
-
-
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 
 //
-// Vertex shader
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    float4x4 ObjectToClip = mul(ObjectToWorld, WorldToClip);
-    Result.P = mul(float4(In.P, 1.0f), ObjectToClip);
-    Result.T = In.T;
-    
-    return Result;
-}
-
+// TODO(Marcus): Clean up this code, it works but it's a bit messy!
+//
 
 //
-// Pixel shader
-float4 pMain(ps_input In) : SV_Target
+// NOTE(Marcus): Supported elements (only the mentioned elements and properties are supported):        
+//               - vertex
+//                 - Requiered property:
+//                   - Positions, named x y z, type float
+//
+//                 - Optional properties:
+//                   - normals, named nx ny nz, type float
+//                   - texture coordinates, named s t, type float
+//
+//               - face
+//                 - Required property
+//                   - none
+// 
+//                 - Optional property
+//                   - none
+//
+
+#ifndef ply_loader__h
+#define ply_loader__h
+
+#include "mathematics.h"
+
+
+struct mesh
 {
-    float4 TextureColour = gTexture.Sample(gSampler, In.T);
-    float4 Result = TextureColour * Colour;
+    v3 *Positions  = nullptr;
+    v3 *Normals   = nullptr;
+    v2 *TexCoords = nullptr;
+    u16 *Indices = nullptr;
     
-    return Result;
-}
+    u32 VertexCount = 0;
+    u32 VertexSize;
+    u32 FaceCount = 0;
+    u32 IndexCount = 0;
+};
+
+b32 ParsePLY(u8 *Data, size_t DataSize, mesh *Output);
+void Free(mesh *Mesh);
+
+
+
+#endif

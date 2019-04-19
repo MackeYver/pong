@@ -37,23 +37,40 @@ void Init(resources *Resources)
 
 void Shutdown(resources *Resources)
 {
-    for (std::vector<bmp_data>::size_type Index = 0;
-         Index < Resources->BmpData.size();
+    //
+    // Free bmp
+    for (std::vector<bmp_resource>::size_type Index = 0;
+         Index < Resources->Bmps.size();
          ++Index)
     {
-        Free(&Resources->BmpData[Index].Bmp);
-        Resources->BmpData[Index].TextureIndex = -1;
+        Free(&Resources->Bmps[Index].Bmp);
+        Resources->Bmps[Index].TextureIndex = -1;
     }
-    Resources->BmpData.clear();
+    Resources->Bmps.clear();
     
-    for (std::vector<wav_data>::size_type Index = 0;
-         Index < Resources->WavData.size();
+    
+    //
+    // Free wav
+    for (std::vector<wav_resource>::size_type Index = 0;
+         Index < Resources->Wavs.size();
          ++Index)
     {
-        Free(&Resources->WavData[Index].Wav);
-        Resources->WavData[Index].VoiceIndex = -1;
+        Free(&Resources->Wavs[Index].Wav);
+        Resources->Wavs[Index].VoiceIndex = -1;
     }
-    Resources->WavData.clear();
+    Resources->Wavs.clear();
+    
+    
+    //
+    // Free meshes
+    for (std::vector<mesh_resource>::size_type Index = 0;
+         Index < Resources->Meshes.size();
+         ++Index)
+    {
+        Free(&Resources->Meshes[Index].Mesh);
+        Resources->Meshes[Index].MeshIndex = -1;
+    }
+    Resources->Meshes.clear();
 }
 
 
@@ -67,16 +84,27 @@ texture_index LoadBMP(resources *Resources, char const *PathAndFileName)
 {
     texture_index Result = -1;
     
-    bmp_data BD;
-    b32 Succeeded = Load(PathAndFileName, &BD.Bmp);
+    u8 *Data = nullptr;
+    size_t DataSize = 0;
+    b32 Succeeded = Resources->Platform.LoadEntireFile(PathAndFileName, &Data, &DataSize);
     
-    if (Succeeded && BD.Bmp.Data)
+    bmp_resource BD;
+    Succeeded = ParseBMP(Data, DataSize, &BD.Bmp);
+    
+    if (Data)
+    {
+        free(Data);
+        Data = nullptr;
+        DataSize = 0;
+    }
+    
+    if (Succeeded && BD.Bmp.Data, BD.Bmp.DataSize > 0)
     {
         texture_index TextureIndex = Resources->Platform.CreateTexture(&BD.Bmp);
         
         if (TextureIndex >= 0)
         {
-            Resources->BmpData.push_back(BD);
+            Resources->Bmps.push_back(BD);
             Result = TextureIndex;
         }
         else
@@ -99,8 +127,19 @@ voice_index LoadWAV(resources *Resources, char const *PathAndFileName)
 {
     voice_index Result = -1;
     
-    wav_data WD;
-    b32 Succeeded = Load(PathAndFileName, &WD.Wav);
+    u8 *Data = nullptr;
+    size_t DataSize = 0;
+    b32 Succeeded = Resources->Platform.LoadEntireFile(PathAndFileName, &Data, &DataSize);
+    
+    wav_resource WD;
+    Succeeded = ParseWAV(Data, DataSize, &WD.Wav);
+    
+    if (Data)
+    {
+        free(Data);
+        Data = nullptr;
+        DataSize = 0;
+    }
     
     if (Succeeded && WD.Wav.Data)
     {
@@ -108,8 +147,8 @@ voice_index LoadWAV(resources *Resources, char const *PathAndFileName)
         
         if (VoiceIndex >= 0)
         {
-            Resources->WavData.push_back(WD);
-            Resources->Platform.SetWavDataIndex(VoiceIndex, Resources->WavData.size() - 1);
+            Resources->Wavs.push_back(WD);
+            Resources->Platform.SetWavResourceIndex(VoiceIndex, Resources->Wavs.size() - 1);
             Result = VoiceIndex;
         }
         else
@@ -122,13 +161,56 @@ voice_index LoadWAV(resources *Resources, char const *PathAndFileName)
 }
 
 
-wav_data *GetWavData(resources *Resources, wav_data_index WavDataIndex)
+wav_resource *GetWavResource(resources *Resources, wav_resource_index WavResourceIndex)
 {
-    wav_data *Result = nullptr;
+    wav_resource *Result = nullptr;
     
-    if ((WavDataIndex >= 0) && ((u32)WavDataIndex < Resources->WavData.size()))
+    if ((WavResourceIndex >= 0) && ((u32)WavResourceIndex < Resources->Wavs.size()))
     {
-        Result = &Resources->WavData[WavDataIndex];
+        Result = &Resources->Wavs[WavResourceIndex];
+    }
+    
+    return Result;
+}
+
+
+
+
+//
+// Mesh
+//
+
+mesh_index LoadMesh(resources *Resources, char const *PathAndFilename)
+{
+    mesh_index Result = -1;
+    
+    u8 *Data = nullptr;
+    size_t DataSize = 0;
+    b32 Succeeded = Resources->Platform.LoadEntireFile(PathAndFilename, &Data, &DataSize);
+    
+    mesh_resource MD;
+    Succeeded = ParsePLY(Data, DataSize, &MD.Mesh);
+    
+    if (Data)
+    {
+        free(Data);
+        Data = nullptr;
+        DataSize = 0;
+    }
+    
+    if (Succeeded)
+    {
+        mesh_index MeshIndex = Resources->Platform.CreateMesh(&MD.Mesh);
+        
+        if (MeshIndex >= 0)
+        {
+            Resources->Meshes.push_back(MD);
+            Result = MeshIndex;
+        }
+        else
+        {
+            Free(&MD.Mesh);
+        }
     }
     
     return Result;

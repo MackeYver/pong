@@ -126,8 +126,8 @@ void Init(game_state *State)
             f32 PaddleInverseMass = 1.0f / (PaddleArea * PaddleDensity);
             
             // Player0
-            State->Players[0].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Players[0]);
             State->Players[0].Colour = V4(1.0f, 0.0f, 0.0f, 1.0f);
+            State->Players[0].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Players[0]);
             body *Body = GetBody(&State->Dynamics, State->Players[0].BodyIndex);
             Body->dPMax = 2.0f*SpeedLimit;
             Body->dPMask = V2(0.0f, 1.0f);
@@ -135,8 +135,8 @@ void Init(game_state *State)
             Body->InverseMass = PaddleInverseMass;
             
             // Player1
-            State->Players[1].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Players[1]);
             State->Players[1].Colour = V4(0.0f, 1.0f, 0.0f, 1.0f);
+            State->Players[1].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Players[1]);
             Body = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
             Body->dPMax = 2.0f*SpeedLimit;
             Body->dPMask = V2(0.0f, 1.0f);
@@ -150,9 +150,8 @@ void Init(game_state *State)
             f32 BallArea = Pi32 * BallRadius * BallRadius;
             f32 BallDensity = 0.0004f;
             
-            State->Ball.BodyIndex = NewRectangleBody(&State->Dynamics, V2(25.0f, 25.0f), &State->Ball);
             State->Ball.Colour = V4(1.0f, 1.0f, 1.0f, 1.0f);
-            
+            State->Ball.BodyIndex = NewRectangleBody(&State->Dynamics, V2(25.0f, 25.0f), &State->Ball);
             Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
             Body->dPMax = SpeedLimit;
             Body->dPMask = v2_one;
@@ -169,7 +168,7 @@ void Init(game_state *State)
             f32 const Width  = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
             f32 const Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
             
-            f32 const vh = 8.0f;  // Visible height
+            f32 const vh = 16.0f;  // Visible height
             f32 const h = 160.0f; // Actual height (larger due to sloppy collision detection)
             v2 Size = V2(2.0f*Width, h);
             
@@ -207,6 +206,30 @@ void Init(game_state *State)
 }
 
 
+void UpdateAI(game_state *State, f32 dt)
+{
+    if (State->PlayerCount == 1)
+    {
+        body *BallBody = GetBody(&State->Dynamics, State->Ball.BodyIndex);
+        body *PaddleBody = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
+        
+        State->PressedKeys.erase(0x28);
+        State->PressedKeys.erase(0x26);
+        
+        f32 Length = 0.8f * PaddleBody->Shape.HalfSize.y;
+        
+        if (BallBody->P.y > (PaddleBody->P.y + Length))
+        {
+            State->PressedKeys[0x26] = 1;
+        }
+        else if (BallBody->P.y < (PaddleBody->P.y - Length))
+        {
+            State->PressedKeys[0x28] = 1;
+        }
+    }
+}
+
+
 void Update(game_state *State, f32 dt)
 {
     assert(State);
@@ -218,10 +241,15 @@ void Update(game_state *State, f32 dt)
     ProcessInput(State);
     
     
-    //
-    // "Physics"
     if (State->GameMode == GameMode_Playing)
     {
+        //
+        // "AI"
+        UpdateAI(State, dt);
+        
+        
+        //
+        // "Physics"
         Update(&State->Dynamics, dt);
         
         std::vector<collision_info> static Collisions;
@@ -408,38 +436,6 @@ void End(game_state *State)
 // Rendering
 //
 
-texture_index GetTexture(game_state *State, texture_handle Handle)
-{
-    texture_index Result = -1;
-    
-    if ((Handle >= 0) && (Handle < TextureHandle_Count))
-    {
-        Result = State->TextureHandles[Handle];
-    }
-    
-    return Result;
-}
-
-void RenderBodyAsRectangle(draw_calls *DrawCalls, body *Body, v4 Colour)
-{
-    PushFilledRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, Colour);
-}
-
-void RenderBodyAsTexturedRectangle(draw_calls *DrawCalls, body *Body, texture_index TextureIndex, v4 Colour = v4_one)
-{
-    PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex, Colour);
-}
-
-void RenderBodyAsCircle(draw_calls *DrawCalls, body *Body, v4 Colour)
-{
-    PushFilledCircle(DrawCalls, Body->P, Body->Shape.Radius, Colour);
-}
-
-void RenderBodyAsTexturedCircle(draw_calls *DrawCalls, body *Body, texture_index TextureIndex, v4 Colour = v4_one)
-{
-    PushTexturedCircle(DrawCalls, Body->P, Body->Shape.Radius, TextureIndex, Colour);
-}
-
 void RenderScores(game_state *State)
 {
     draw_calls *DrawCalls = &State->DrawCalls;
@@ -458,6 +454,19 @@ void RenderScores(game_state *State)
 }
 
 
+texture_index GetTexture(game_state *State, texture_handle Handle)
+{
+    texture_index Result = -1;
+    
+    if ((Handle >= 0) && (Handle < TextureHandle_Count))
+    {
+        Result = State->TextureHandles[Handle];
+    }
+    
+    return Result;
+}
+
+
 void Render(game_state *State)
 {
     assert(State);
@@ -470,32 +479,20 @@ void Render(game_state *State)
     //
     // Render
     {
-#if 0
-        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Players[0].BodyIndex), State->Players[0].Colour);
-        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Players[1].BodyIndex), State->Players[1].Colour);
-#endif
-        
         for (u32 Index = 0; Index < 2; ++Index)
         {
-            RenderBodyAsTexturedRectangle(DrawCalls, 
-                                          GetBody(&State->Dynamics, State->Players[Index].BodyIndex), 
-                                          GetTexture(State, TextureHandle_Paddle));
+            body *Body = GetBody(&State->Dynamics, State->Players[Index].BodyIndex);
+            texture_index TextureIndex = GetTexture(State, TextureHandle_Paddle);
+            PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex);
             
-            RenderBodyAsTexturedRectangle(DrawCalls, 
-                                          GetBody(&State->Dynamics, State->Borders[Index].BodyIndex), 
-                                          GetTexture(State, (texture_handle)((u32)TextureHandle_WallTop + Index)));
-            
+            Body = GetBody(&State->Dynamics, State->Borders[Index].BodyIndex);
+            TextureIndex = GetTexture(State, (texture_handle)((u32)TextureHandle_WallTop + Index));
+            PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex);
         }
         
-        
-#if 0
-        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Borders[0].BodyIndex), State->Borders[0].Colour);
-        RenderBodyAsRectangle(DrawCalls, GetBody(&State->Dynamics, State->Borders[1].BodyIndex), State->Borders[1].Colour);
-#endif
-        
-        RenderBodyAsTexturedCircle(DrawCalls, 
-                                   GetBody(&State->Dynamics, State->Ball.BodyIndex), 
-                                   GetTexture(State, TextureHandle_Ball));
+        body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
+        texture_index TextureIndex = GetTexture(State, TextureHandle_Ball);
+        PushTexturedCircle(DrawCalls, Body->P, Body->Shape.Radius, TextureIndex);
     }
     
     RenderScores(State);
@@ -585,34 +582,6 @@ void ProcessInput(game_state *State)
         
         if (State->GameMode == GameMode_Playing)
         {
-            b32 Up1 = false;
-            b32 Down1 = false;
-            
-            b32 Up2 = false;
-            b32 Down2 = false;
-            
-            if (State->PressedKeys.count(0x57) > 0) // W
-            {
-                Up1 = true;
-            }
-            
-            if (State->PressedKeys.count(0x53) > 0) // S
-            {
-                Down1 = true;
-            }
-            
-            if (State->PressedKeys.count(0x26) > 0) // Arrow up
-            {
-                Up2 = true;
-            }
-            
-            if (State->PressedKeys.count(0x28) > 0) // Arrow down
-            {
-                Down2 = true;
-            }
-            
-            //
-            // Apply forces
             body *Body[2];
             Body[0] = GetBody(&State->Dynamics, State->Players[0].BodyIndex);
             Body[1] = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
@@ -621,22 +590,22 @@ void ProcessInput(game_state *State)
             Body[1]->F = v2_zero;
             f32 Force = 30000.0f;
             
-            if (Up1 || (Up2 && State->PlayerCount == 1))
+            if (State->PressedKeys.count(0x57) > 0) // W
             {
                 Body[0]->F += V2(0.0f, +Force);
             }
             
-            if (Down1 || (Down2 && State->PlayerCount == 1))
+            if (State->PressedKeys.count(0x53) > 0) // S
             {
                 Body[0]->F += V2(0.0f, -Force);
             }
             
-            if (Up2 && State->PlayerCount == 2)
+            if (State->PressedKeys.count(0x26) > 0) // Arrow up
             {
                 Body[1]->F += V2(0.0f, +Force);
             }
             
-            if (Down2 && State->PlayerCount == 2)
+            if (State->PressedKeys.count(0x28) > 0) // Arrow down
             {
                 Body[1]->F += V2(0.0f, -Force);
             }
@@ -686,4 +655,6 @@ void Reset(game_state *State)
         Body->dP = v2_zero;
         Body->F = v2_zero;
     }
+    
+    State->PressedKeys.clear();
 }

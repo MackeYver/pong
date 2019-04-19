@@ -42,7 +42,7 @@
 
 struct xaudio_voice
 {
-    wav_data_index WavDataIndex = -1;
+    wav_resource_index WavResourceIndex = -1;
     IXAudio2SourceVoice *SourceVoice = nullptr;
     b32 ShouldLoop = false;
 };
@@ -65,7 +65,7 @@ void Init(xaudio *XAudio, resources *Resources);
 void Shutdown(xaudio *XAudio);
 
 voice_index CreateVoice(void *XAudio, wav *Wav);
-b32 SetWavDataIndex(void *XAudio, voice_index VoiceIndex, wav_data_index WavDataIndex);
+b32 SetWavResourceIndex(void *XAudio, voice_index VoiceIndex, wav_resource_index WavResourceIndex);
 
 void Play(void *XAudio, voice_index Index);
 void Stop(void *XAudio, voice_index Index);
