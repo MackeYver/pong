@@ -60,6 +60,29 @@ void Free(dx_texture *Texture);
 
 
 //
+// Meshes
+//
+
+struct dx_mesh
+{
+    ID3D11Buffer *Positions = nullptr;
+    ID3D11Buffer *Normals = nullptr;
+    ID3D11Buffer *UVs = nullptr;
+    ID3D11Buffer *Indices = nullptr;
+    
+    D3D_PRIMITIVE_TOPOLOGY Topology;
+    
+    u32 VertexCount = 0;
+    u32 IndexCount = 0;
+};
+
+mesh_index CreateMesh(void *DXState, mesh *Mesh);
+void Free(dx_mesh *Mesh);
+
+
+
+
+//
 // DirectX
 //
 
@@ -69,7 +92,6 @@ struct shader_constants
     m4 ObjectToWorld;
     v4 Colour;
 };
-
 
 struct dx_state
 {
@@ -86,9 +108,10 @@ struct dx_state
     
     //
     // Basic program (renders to RenderTargetTexture)
-    ID3D11InputLayout *ilBasic = nullptr;
     ID3D11VertexShader *vsBasic = nullptr;
     ID3D11PixelShader *psBasic = nullptr;
+    ID3D11InputLayout *ilBasic = nullptr;
+    ID3D11InputLayout *ilBasicSeperated = nullptr;
     
     //
     // Primitives
@@ -141,6 +164,7 @@ struct dx_state
     //
     // Textures
     std::vector<dx_texture> Textures;
+    std::vector<dx_mesh> Meshes;
 };
 
 b32 Init(dx_state *State, HWND hWnd);

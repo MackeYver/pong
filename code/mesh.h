@@ -54,13 +54,13 @@
 
 struct mesh
 {
-    v3 *Positions  = nullptr;
+    v3 *Positions = nullptr;
     v3 *Normals   = nullptr;
-    v2 *TexCoords = nullptr;
-    u16 *Indices = nullptr;
+    v2 *UVs       = nullptr;
+    u16 *Indices  = nullptr;
     
     u32 VertexCount = 0;
-    u32 VertexSize;
+    size_t VertexSize;
     u32 FaceCount = 0;
     u32 IndexCount = 0;
 };

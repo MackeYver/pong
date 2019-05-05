@@ -72,6 +72,7 @@ void Shutdown(dx_state *State)
     DX_RELEASE(vsFullscreen);
     DX_RELEASE(psBasic);
     DX_RELEASE(ilBasic);
+    DX_RELEASE(ilBasicSeperated);
     DX_RELEASE(vsBasic);
     DX_RELEASE(BackbufferView);
     DX_RELEASE(Backbuffer);
@@ -91,6 +92,16 @@ void Shutdown(dx_state *State)
         Free(&State->Textures[Index]);
     }
     State->Textures.clear();
+    
+    //
+    // Meshes
+    for (std::vector<dx_mesh>::size_type Index = 0;
+         Index < State->Meshes.size();
+         ++Index)
+    {
+        Free(&State->Meshes[Index]);
+    }
+    State->Meshes.clear();
 }
 
 
@@ -242,7 +253,7 @@ b32 Init(dx_state *State, HWND hWnd)
         Desc.CullMode = D3D11_CULL_BACK;
         Desc.FrontCounterClockwise = true;
         Desc.DepthClipEnable = true;
-        Desc.MultisampleEnable = false;
+        Desc.MultisampleEnable = true;
         Desc.AntialiasedLineEnable = true;
         
         Result = State->Device->CreateRasterizerState(&Desc, &State->RasterizerState);
@@ -261,11 +272,6 @@ b32 Init(dx_state *State, HWND hWnd)
     {
         //
         // Basic shader (no texture or lighting)
-        D3D11_INPUT_ELEMENT_DESC InputElements[] =
-        {
-            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
-        };
         
         // Vertex shader
         u8 *Data = nullptr;
@@ -284,7 +290,30 @@ b32 Init(dx_state *State, HWND hWnd)
         }
         
         // Input layout
+        D3D11_INPUT_ELEMENT_DESC InputElements[] =
+        {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        };
         Result = State->Device->CreateInputLayout(InputElements, 2, Data, DataSize, &State->ilBasic);
+        if (FAILED(Result))
+        {
+            printf("Failed to create input layout!\n");
+            return false;
+        }
+        
+        D3D11_INPUT_ELEMENT_DESC InputElementsSeperated[] =
+        {
+            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        };
+        Result = State->Device->CreateInputLayout(InputElementsSeperated, 2, Data, DataSize, &State->ilBasicSeperated);
+        if (FAILED(Result))
+        {
+            printf("Failed to create input layout!\n");
+            return false;
+        }
+        
         
         if (Data)
         {
@@ -723,7 +752,7 @@ b32 Init(dx_state *State, HWND hWnd)
         pt Vertices[] =
         {
             {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},
-            {{ 0.5f,  0.5f, 1.0f}, {1.0f, 0.0f}},
+            {{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f}},
             {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f}},
             
             {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},
@@ -835,7 +864,7 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     //
-    // Use all the stuff that was created above
+    // Use some of the stuff that was created above
     //
     
     State->DeviceContext->RSSetViewports(1, &State->Viewport);
@@ -847,7 +876,6 @@ b32 Init(dx_state *State, HWND hWnd)
     //
     // DirectWrite
     Init(&State->DWState, State);
-    
     
     
     return true;
@@ -878,8 +906,6 @@ void BeginRendering(dx_state *State)
     //
     
     ID3D11DeviceContext *DC = State->DeviceContext;
-    
-    DC->IASetInputLayout(State->ilBasic);
     
     //
     // Clear the depth-/stencil-view and the texture used as render target
@@ -975,6 +1001,7 @@ void RenderFilledRectangle(dx_state *State, v2 Po, v2 Size, v4 Colour)
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
     DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset);
+    DC->IASetInputLayout(State->ilBasic);
     DC->Draw(6, 0);
 }
 
@@ -996,7 +1023,8 @@ void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, texture_index Inde
     State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset); 
+    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset);
+    DC->IASetInputLayout(State->ilBasic);
     DC->Draw(6, 0);
     
     State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
@@ -1016,6 +1044,7 @@ void RenderFilledCircle(dx_state *State, v2 Po, f32 Radius, v4 Colour)
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
     DC->IASetVertexBuffers(0, 1, &State->VertexBufferCircle, &Stride, &Offset); 
+    DC->IASetInputLayout(State->ilBasic);
     DC->Draw(State->VertexCountCircle, 0);
 }
 
@@ -1035,8 +1064,37 @@ void RenderTexturedCircle(dx_state *State, v2 Po, f32 Radius, texture_index Inde
     State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
     
     DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferCircle, &Stride, &Offset); 
+    DC->IASetVertexBuffers(0, 1, &State->VertexBufferCircle, &Stride, &Offset);
+    DC->IASetInputLayout(State->ilBasic);
     DC->Draw(State->VertexCountCircle, 0);
+    
+    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
+}
+
+
+void RenderTexturedMesh(dx_state *State, m4 ObjectToWorld, mesh_index MeshIndex, texture_index TextureIndex, v4 Colour)
+{
+    State->ShaderConstants.Colour = Colour;
+    State->ShaderConstants.ObjectToWorld = ObjectToWorld;
+    UpdateConstantBuffer(State, &State->ShaderConstants);
+    
+    ID3D11DeviceContext *DC = State->DeviceContext;
+    
+    dx_texture *Texture = &State->Textures[TextureIndex];
+    State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
+    
+    dx_mesh *Mesh = &State->Meshes[MeshIndex];
+    
+    size_t Stride = sizeof(v3);
+    size_t Offset = 0;
+    DC->IASetVertexBuffers(0, 1, &Mesh->Positions, &Stride, &Offset); 
+    
+    Stride = sizeof(v2);
+    DC->IASetVertexBuffers(1, 1, &Mesh->UVs, &Stride, &Offset); 
+    
+    DC->IASetInputLayout(State->ilBasicSeperated);
+    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
+    DC->Draw(Mesh->VertexCount, 0);
     
     State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
 }
@@ -1091,6 +1149,12 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
             {
                 draw_call_textured_circle *DrawCall = reinterpret_cast<draw_call_textured_circle *>(CurrAddress);;
                 RenderTexturedCircle(State, DrawCall->P, DrawCall->Radius, DrawCall->TextureIndex, DrawCall->Colour);
+            } break;
+            
+            case DrawCallType_TexturedMesh:
+            {
+                draw_call_textured_mesh *DrawCall = reinterpret_cast<draw_call_textured_mesh *>(CurrAddress);;
+                RenderTexturedMesh(State, DrawCall->ObjectToWorld, DrawCall->MeshIndex, DrawCall->TextureIndex, DrawCall->Colour);
             } break;
             
             default:
@@ -1185,5 +1249,127 @@ void Free(dx_texture *Texture)
     {
         Texture->ShaderView ? Texture->ShaderView->Release() : 0;
         Texture->Texture ? Texture->Texture->Release() : 0;
+    }
+}
+
+
+
+
+//
+// Meshes
+//
+
+b32 CreateBuffer(dx_state *State, void *Data, size_t DataSize, size_t ElementSize, ID3D11Buffer **Output)
+{
+    b32 Result = true;
+    
+    D3D11_BUFFER_DESC BufferDesc;
+    ZeroMemory(&BufferDesc, sizeof(D3D11_BUFFER_DESC));
+    
+    BufferDesc.ByteWidth = DataSize;                 // size of the buffer
+    BufferDesc.Usage = D3D11_USAGE_IMMUTABLE;        // This buffer will never change
+    BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER; // use in vertex shader
+    BufferDesc.CPUAccessFlags = 0;                   // No CPU access to the buffer
+    BufferDesc.MiscFlags = 0;                        // No other option
+    BufferDesc.StructureByteStride = ElementSize;
+    
+    D3D11_SUBRESOURCE_DATA InitData;
+    ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
+    
+    InitData.pSysMem = Data;
+    InitData.SysMemPitch = 0;
+    InitData.SysMemSlicePitch = 0;
+    
+    HRESULT HResult = State->Device->CreateBuffer(&BufferDesc, &InitData, Output);
+    if (FAILED(HResult)) 
+    {
+        Result = false;
+    }
+    
+    return Result;
+}
+
+mesh_index CreateMesh(void *DXState, mesh *Mesh)
+{
+    dx_state *State = reinterpret_cast<dx_state *>(DXState); // CRAZY!
+    mesh_index Result = -10;
+    
+    if (Mesh)
+    {
+        dx_mesh DXMesh;
+        
+        // TODO(Marcus): We're assuming that it is triangles, but we don't know. Fix this!
+        DXMesh.Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        
+        assert(Mesh->Positions);
+        size_t Size = sizeof(v3) * Mesh->VertexCount;
+        if (!CreateBuffer(State, Mesh->Positions, Size, sizeof(v3), &DXMesh.Positions))
+        {
+            printf("Failed to create the buffer with the positions!\n");
+            Result = -1;
+        }
+        else
+        {
+            DXMesh.VertexCount = Mesh->VertexCount;
+        }
+        
+        if (Mesh->Normals && Result != -1)
+        {
+            Size = sizeof(v3) * Mesh->VertexCount;
+            if (!CreateBuffer(State, Mesh->Normals, Size, sizeof(v3), &DXMesh.Normals))
+            {
+                printf("Failed to create the buffer with the normals!\n");
+                Result = -1;
+            }
+        }
+        
+        if (Mesh->UVs && Result != -1)
+        {
+            Size = sizeof(v2) * Mesh->VertexCount;
+            if (!CreateBuffer(State, Mesh->UVs, Size, sizeof(v2), &DXMesh.UVs))
+            {
+                printf("Failed to create the buffer with the texture coordinates!\n");
+                Result = -1;
+            }
+        }
+        
+        if (Mesh->Indices && Result != -1)
+        {
+            Size = sizeof(u16) * Mesh->IndexCount;
+            if (!CreateBuffer(State, Mesh->Indices, Size, sizeof(u16), &DXMesh.Indices))
+            {
+                printf("Failed to create the buffer with the indices!\n");
+                Result = -1;
+            }
+            DXMesh.IndexCount = Mesh->IndexCount;
+        }
+        
+        if (Result != 1)
+        {
+            State->Meshes.push_back(DXMesh);
+            Result = State->Meshes.size() - 1;
+        }
+    }
+    
+    return Result;
+}
+
+
+void Free(dx_mesh *Mesh)
+{
+    if (Mesh)
+    {
+        Mesh->Positions ? Mesh->Positions->Release() : 0;
+        Mesh->Normals   ? Mesh->Normals->Release()   : 0;
+        Mesh->UVs       ? Mesh->UVs->Release()       : 0;
+        Mesh->Indices   ? Mesh->Indices->Release()   : 0;
+        
+        Mesh->Positions = nullptr;
+        Mesh->Normals = nullptr;
+        Mesh->UVs = nullptr;
+        Mesh->Indices = nullptr;
+        
+        Mesh->VertexCount = 0;
+        Mesh->IndexCount = 0;
     }
 }

@@ -25,10 +25,11 @@
 #include "common.h"
 
 
+
 struct vs_input
 {
     float3 P : POSITION0;
-    float3 T : TEXCOORD0;
+    float2 T : TEXCOORD0;
 };
 
 struct ps_input
@@ -59,8 +60,12 @@ ps_input vMain(vs_input In)
 // Pixel shader
 float4 pMain(ps_input In) : SV_Target
 {
+#if 1
     float4 TextureColour = gTexture.Sample(gSampler, In.T);
     float4 Result = TextureColour * Colour;
     
     return Result;
+#else
+    return float4(In.T.x, In.T.y, 0.0f, 1.0f);
+#endif
 }

@@ -202,7 +202,7 @@ token EndHeader(tokenizer *Tokenizer, b32 HasVertices, b32 HasNormals, b32 HasUV
         
         if (HasUVs)
         {
-            Output->TexCoords = (v2 *)malloc(Output->VertexCount * sizeof(v2));
+            Output->UVs = (v2 *)malloc(Output->VertexCount * sizeof(v2));
         }
         
         if (Output->IndexCount > 0)
@@ -313,7 +313,7 @@ b32 ParsePLY(u8 *Data, size_t DataSize, mesh *Output)
                                 f32 s = Token.f32;
                                 Token = RequireNumber(&Tokenizer);
                                 f32 t = Token.f32;
-                                Output->TexCoords[Index] = V2(s, t);
+                                Output->UVs[Index] = V2(s, t);
                                 
                                 Token = GetToken(&Tokenizer);
                             }
@@ -382,10 +382,10 @@ void Free(mesh *Mesh)
         Mesh->Normals = nullptr;
     }
     
-    if (Mesh->TexCoords)
+    if (Mesh->UVs)
     {
-        free(Mesh->TexCoords);
-        Mesh->TexCoords = nullptr;
+        free(Mesh->UVs);
+        Mesh->UVs = nullptr;
     }
     
     if (Mesh->Indices)

@@ -36,7 +36,7 @@
 
 
 //
-// Entites
+// Entities
 //
 
 struct player
@@ -62,10 +62,12 @@ struct border
 
 
 
+
 //
-// Audio
+// Game resources
 //
 
+// Audio
 enum audio_handle // @debug
 {
     AudioHandle_Theme = 0,
@@ -76,20 +78,24 @@ enum audio_handle // @debug
     AudioHandle_Count
 };
 
-
-
-//
 // Textures
-//
-
 enum texture_handle // @debug
 {
     TextureHandle_Ball = 0,
     TextureHandle_Paddle,
-    TextureHandle_WallTop,
-    TextureHandle_WallBottom,
+    TextureHandle_Brick,
     
     TextureHandle_Count
+};
+
+// Meshes
+enum mesh_handle // @debug
+{
+    MeshHandle_Ball = 0,
+    MeshHandle_Paddle,
+    MeshHandle_Wall,
+    
+    MeshHandle_Count
 };
 
 
@@ -119,6 +125,7 @@ struct game_state
     // Rendering
     draw_calls DrawCalls;
     texture_index TextureHandles[TextureHandle_Count];
+    mesh_index MeshHandles[MeshHandle_Count];
     
     //
     // Audio

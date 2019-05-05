@@ -189,3 +189,23 @@ void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
     DrawCall->Text = reinterpret_cast<wchar_t *>(DrawCall + DrawCallSize); 
     wcsncpy_s(DrawCall->Text, TextSize, Text, TextSize);
 }
+
+
+void PushTexturedMesh(draw_calls *DrawCalls, v2 P, mesh_index MeshIndex, texture_index TextureIndex, v2 Size, v4 Colour)
+{
+    assert(DrawCalls);
+    assert(DrawCalls->Memory);
+    
+    size_t DrawCallSize = sizeof(draw_call_textured_mesh);
+    
+    draw_call_textured_mesh *DrawCall = reinterpret_cast<draw_call_textured_mesh *>(PushMemory(DrawCalls, DrawCallSize));
+    assert(DrawCall);
+    
+    DrawCall->Header.Size = DrawCallSize;
+    DrawCall->Header.Type = DrawCallType_TexturedMesh;
+    
+    DrawCall->ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(P.x, P.y, 0.0f);
+    DrawCall->MeshIndex = MeshIndex;
+    DrawCall->TextureIndex = TextureIndex;
+    DrawCall->Colour = Colour;
+}

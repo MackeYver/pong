@@ -31,15 +31,12 @@
 #include "wav.h"
 #include "mesh.h"
 #include "platform.h"
-
-
-
 struct resources;
+
+
 
 //
 // Textures
-//
-
 typedef s32 texture_index;
 typedef s32 bmp_resource_index;
 
@@ -53,11 +50,8 @@ texture_index LoadBMP(resources *Resources, char const *PathAndFileName);
 
 
 
-
 //
 // Wav
-// 
-
 typedef s32 voice_index;
 typedef s32 wav_resource_index; 
 
@@ -72,11 +66,8 @@ wav_resource *GetWavResource(resources *Resources, wav_resource_index WavDataInd
 
 
 
-
 //
 // Mesh
-//
-
 typedef s32 mesh_index;
 typedef s32 mesh_resource_index;
 
@@ -87,14 +78,12 @@ struct mesh_resource
 };
 
 mesh_index LoadPLY(resources *Resources, char const *PathAndFilename);
-
+mesh_index LoadMesh(resources *Resources, v3 *Positions, v2 *UVs, u32 VertexCount);
 
 
 
 //
 // Resource management
-//
-
 struct resources
 {
     platform Platform;

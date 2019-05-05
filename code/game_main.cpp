@@ -63,55 +63,6 @@ void Init(game_state *State)
     State->GameMode = GameMode_Inactive;
     
     //
-    // Load audio
-    {
-        char const *PathAndFilename[] = 
-        {
-            "data\\theme.wav",
-            "data\\paddle_bounce.wav",
-            "data\\border_bounce.wav",
-            "data\\score.wav",
-        };
-        
-        for (u32 Index = 0; Index < AudioHandle_Count; ++Index)
-        {
-            voice_index VIndex = LoadWAV(&State->Resources, PathAndFilename[Index]);
-            assert(VIndex >= 0);
-            State->AudioHandles[Index] = VIndex;
-        }
-        
-        State->Audio.Play(AudioHandle_Theme);
-    }
-    
-    
-    //
-    // Load textures
-    {
-        char const *PathAndFilename[] = 
-        {
-            "data\\ball.bmp",
-            "data\\paddle.bmp",
-            "data\\wall_top.bmp",
-            "data\\wall_bottom.bmp",
-            
-        };
-        
-        for (u32 Index = 0; Index < TextureHandle_Count; ++Index)
-        {
-            texture_index TIndex = LoadBMP(&State->Resources, PathAndFilename[Index]);
-            assert(TIndex >= 0);
-            State->TextureHandles[Index] = TIndex;
-        }
-    }
-    
-    
-    //
-    // Game state
-    State->BackgroundColour = V4(0.0f, 0.0f, 1.0f, 1.0f); // TODO(Marcus): currently unused!
-    State->PlayerCount = 0;
-    
-    
-    //
     // Setup entities (hardcoded for now)
     {
         
@@ -167,14 +118,11 @@ void Init(game_state *State)
         {
             f32 const Width  = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
             f32 const Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
-            
-            f32 const vh = 16.0f;  // Visible height
-            f32 const h = 160.0f; // Actual height (larger due to sloppy collision detection)
-            v2 Size = V2(2.0f*Width, h);
+            v2 const Size = V2(Width, 0.05f * Height);
             
             f32 const MidX = 0.5f * Width;
-            f32 const TopY = (f32)Height - vh + 0.5f*h;
-            f32 const BottomY = vh - 0.5f*h;
+            f32 const TopY = (f32)Height - 0.5f * Size.y;
+            f32 const BottomY = 0.5f * Size.y;
             
             //
             // Bottom border
@@ -198,6 +146,93 @@ void Init(game_state *State)
     
     
     //
+    // Load audio
+    {
+        char const *PathAndFilename[] = 
+        {
+            "data\\theme.wav",
+            "data\\paddle_bounce.wav",
+            "data\\border_bounce.wav",
+            "data\\score.wav",
+        };
+        
+        for (u32 Index = 0; Index < AudioHandle_Count; ++Index)
+        {
+            voice_index VIndex = LoadWAV(&State->Resources, PathAndFilename[Index]);
+            assert(VIndex >= 0);
+            State->AudioHandles[Index] = VIndex;
+        }
+        
+        State->Audio.Play(AudioHandle_Theme);
+    }
+    
+    
+    //
+    // Load textures
+    {
+        char const *PathAndFilename[] = 
+        {
+            "data\\ball.bmp",
+            "data\\paddle.bmp",
+            "data\\brick.bmp",
+            
+        };
+        
+        for (u32 Index = 0; Index < TextureHandle_Count; ++Index)
+        {
+            texture_index TIndex = LoadBMP(&State->Resources, PathAndFilename[Index]);
+            assert(TIndex >= 0);
+            State->TextureHandles[Index] = TIndex;
+        }
+    }
+    
+    
+    //
+    // Meshes
+    {
+        f32 Width = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
+        f32 Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
+        f32 const w = 0.5f * Width;
+        f32 const h = 0.5f * 0.05f * Height;
+        
+        v3 P[] =
+        {
+            {-w, +h, 0.0f},
+            {-w, -h, 0.0f},
+            {+w, -h, 0.0f},
+            
+            {-w, +h, 0.0f},
+            {+w, -h, 0.0f},
+            {+w, +h, 0.0f},
+        };
+        
+        f32 s = Width / 128.0f;
+        f32 t = 1.0;
+        
+        v2 UV[] =
+        {
+            {0.0f, 0.0f},
+            {0.0f,    t},
+            {   s,    t},
+            
+            {0.0f, 0.0f},
+            {   s,    t},
+            {   s, 0.0f},
+        };
+        
+        mesh_index MIndex = LoadMesh(&State->Resources, P, UV, 6);
+        assert(MIndex >= 0);
+        State->MeshHandles[MeshHandle_Wall] = MIndex;
+    }
+    
+    
+    //
+    // Game state
+    State->BackgroundColour = V4(0.0f, 0.0f, 1.0f, 1.0f); // TODO(Marcus): currently unused!
+    State->PlayerCount = 0;
+    
+    
+    //
     // Seed the RNG
     {
         time_t Time = time(nullptr) * time(nullptr);
@@ -208,15 +243,45 @@ void Init(game_state *State)
 
 void UpdateAI(game_state *State, f32 dt)
 {
-    if (State->PlayerCount == 1)
+    if (State->PlayerCount == 2)
     {
-        body *BallBody = GetBody(&State->Dynamics, State->Ball.BodyIndex);
+        return;
+    }
+    
+    body *BallBody = GetBody(&State->Dynamics, State->Ball.BodyIndex);
+    f32 LengthFactor = 0.8f;
+    
+    //
+    // Left paddle, only if we're 0 players
+    if (State->PlayerCount == 0)
+    {
+        body *PaddleBody = GetBody(&State->Dynamics, State->Players[0].BodyIndex);
+        
+        State->PressedKeys.erase(0x57);
+        State->PressedKeys.erase(0x53);
+        
+        f32 Length = LengthFactor * PaddleBody->Shape.HalfSize.y;
+        
+        if (BallBody->P.y > (PaddleBody->P.y + Length))
+        {
+            State->PressedKeys[0x57] = 1;
+        }
+        else if (BallBody->P.y < (PaddleBody->P.y - Length))
+        {
+            State->PressedKeys[0x53] = 1;
+        }
+    }
+    
+    
+    //
+    // Right paddle, if < 2 players
+    {
         body *PaddleBody = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
         
         State->PressedKeys.erase(0x28);
         State->PressedKeys.erase(0x26);
         
-        f32 Length = 0.8f * PaddleBody->Shape.HalfSize.y;
+        f32 Length = LengthFactor * PaddleBody->Shape.HalfSize.y;
         
         if (BallBody->P.y > (PaddleBody->P.y + Length))
         {
@@ -447,10 +512,10 @@ void RenderScores(game_state *State)
     // Scores
     wchar_t ScoreString[4];
     _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[0].Score);
-    PushText(DrawCalls, V2(0.5f * Width - 70.0f, 48.0f), ScoreString);
+    PushText(DrawCalls, V2(0.5f * Width - 70.0f, 25.0f), ScoreString);
     
     _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[1].Score);
-    PushText(DrawCalls, V2(0.5f * Width + 70.0f, 48.0f), ScoreString);
+    PushText(DrawCalls, V2(0.5f * Width + 70.0f, 25.0f), ScoreString);
 }
 
 
@@ -461,6 +526,19 @@ texture_index GetTexture(game_state *State, texture_handle Handle)
     if ((Handle >= 0) && (Handle < TextureHandle_Count))
     {
         Result = State->TextureHandles[Handle];
+    }
+    
+    return Result;
+}
+
+
+mesh_index GetMesh(game_state *State, mesh_handle Handle)
+{
+    mesh_index Result = -1;
+    
+    if ((Handle >= 0) && (Handle < MeshHandle_Count))
+    {
+        Result = State->MeshHandles[Handle];
     }
     
     return Result;
@@ -481,13 +559,16 @@ void Render(game_state *State)
     {
         for (u32 Index = 0; Index < 2; ++Index)
         {
+            // Paddle
             body *Body = GetBody(&State->Dynamics, State->Players[Index].BodyIndex);
             texture_index TextureIndex = GetTexture(State, TextureHandle_Paddle);
             PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex);
             
+            // Border
             Body = GetBody(&State->Dynamics, State->Borders[Index].BodyIndex);
-            TextureIndex = GetTexture(State, (texture_handle)((u32)TextureHandle_WallTop + Index));
-            PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex);
+            TextureIndex = GetTexture(State, (texture_handle)((u32)TextureHandle_Brick));
+            mesh_index MeshIndex = GetMesh(State, (mesh_handle)((u32)MeshHandle_Wall));
+            PushTexturedMesh(DrawCalls, Body->P, MeshIndex, TextureIndex); 
         }
         
         body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
@@ -505,8 +586,9 @@ void Render(game_state *State)
             f32 dy =  70.0f;
             
             PushText(DrawCalls, V2(0.5f * Width, y)            , L"Pong!");
-            PushText(DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 1 to start a one player game");
-            PushText(DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 2 to start a two player game");
+            PushText(DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 0 to start a battle of the AI");
+            PushText(DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 1 to start a one player game");
+            PushText(DrawCalls, V2(0.5f * Width, y + 3.0f * dy), L"Press 2 to start a two player game");
         } break;
         
         case GameMode_Paused:
@@ -534,22 +616,24 @@ void ProcessInput(game_state *State)
 {
     if (State->GameMode == GameMode_Inactive)
     {
-        State->PlayerCount = 0;
+        if (State->PressedKeys.count(0x30) > 0) // Key 0, AI vs AI
+        {
+            State->PressedKeys.erase(0x30);
+            State->PlayerCount = 0;
+            NewGame(State);
+        }
         
         if (State->PressedKeys.count(0x31) > 0) // Key 1
         {
             State->PressedKeys.erase(0x31);
             State->PlayerCount = 1;
+            NewGame(State);
         }
         
         if (State->PressedKeys.count(0x32) > 0) // Key 2
         {
             State->PressedKeys.erase(0x32);
             State->PlayerCount = 2;
-        }
-        
-        if (State->PlayerCount > 0)
-        {
             NewGame(State);
         }
     }
@@ -641,8 +725,8 @@ void Reset(game_state *State)
     v2 Size = V2(25.0f, 140.0f);
     v2 Po[2] = 
     {
-        V2(2.5f * Size.x, 0.5f * Height),
-        V2(Width - 2.5f * Size.x, 0.5f * Height)
+        V2(1.5f * Size.x, 0.5f * Height),
+        V2(Width - 1.5f * Size.x, 0.5f * Height)
     };
     
     for (int Index = 0; Index < 2; ++Index)

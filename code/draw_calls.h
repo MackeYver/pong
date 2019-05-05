@@ -71,6 +71,9 @@ void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index I
 
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
 
+void PushTexturedMesh(draw_calls *DrawCalls, v2 P, mesh_index MeshIndex, texture_index TextureIndex, 
+                      v2 Size = v2_one, v4 Colour = v4_one);
+
 
 
 
@@ -85,6 +88,7 @@ enum draw_call_type
     DrawCallType_FilledCircle,
     DrawCallType_TexturedCircle,
     DrawCallType_Text,
+    DrawCallType_TexturedMesh,
     
     DrawCallType_Count,
 };
@@ -103,6 +107,7 @@ struct draw_call_filled_rectangle
     v4 Colour;
     v2 P;
     v2 Size;
+    f32 Rotation;
 };
 
 
@@ -112,6 +117,7 @@ struct draw_call_textured_rectangle
     v4 Colour;
     v2 P;
     v2 Size;
+    f32 Rotation;
     texture_index TextureIndex;
 };
 
@@ -140,6 +146,16 @@ struct draw_call_text
     draw_call_header Header;
     wchar_t *Text;
     v2 P;
+    f32 Rotation;
+};
+
+struct draw_call_textured_mesh
+{
+    draw_call_header Header;
+    m4 ObjectToWorld;
+    v4 Colour;
+    mesh_index MeshIndex;
+    texture_index TextureIndex;
 };
 
 

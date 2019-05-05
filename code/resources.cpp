@@ -180,7 +180,7 @@ wav_resource *GetWavResource(resources *Resources, wav_resource_index WavResourc
 // Mesh
 //
 
-mesh_index LoadMesh(resources *Resources, char const *PathAndFilename)
+mesh_index LoadPLY(resources *Resources, char const *PathAndFilename)
 {
     mesh_index Result = -1;
     
@@ -211,6 +211,45 @@ mesh_index LoadMesh(resources *Resources, char const *PathAndFilename)
         {
             Free(&MD.Mesh);
         }
+    }
+    
+    return Result;
+}
+
+mesh_index LoadMesh(resources *Resources, v3 *Positions, v2 *UVs, u32 VertexCount)
+{
+    assert(Positions);
+    assert(UVs);
+    
+    mesh_index Result = -1;
+    
+    mesh_resource MD;
+    
+    size_t Size = sizeof(v3) * VertexCount;
+    MD.Mesh.Positions = static_cast<v3 *>(malloc(Size));
+    assert(MD.Mesh.Positions);
+    memcpy(MD.Mesh.Positions, Positions, Size);
+    
+    Size = sizeof(v2) * VertexCount;
+    MD.Mesh.UVs = static_cast<v2 *>(malloc(Size));
+    assert(MD.Mesh.UVs);
+    memcpy(MD.Mesh.UVs, UVs, Size);
+    
+    MD.Mesh.VertexCount = VertexCount;
+    
+    assert(!MD.Mesh.Normals);
+    assert(!MD.Mesh.Indices);
+    assert(MD.Mesh.IndexCount == 0);
+    
+    mesh_index MeshIndex = Resources->Platform.CreateMesh(&MD.Mesh);
+    if (MeshIndex >= 0)
+    {
+        Resources->Meshes.push_back(MD);
+        Result = MeshIndex;
+    }
+    else
+    {
+        Free(&MD.Mesh);
     }
     
     return Result;
