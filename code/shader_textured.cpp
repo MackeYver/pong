@@ -156,7 +156,7 @@ b32 Init(ID3D11Device *Device, shader_textured *Shader)
     //
     
     {
-        size_t Size = sizeof(textured_shader_constants);
+        size_t Size = sizeof(shader_textured::constants);
         assert(Size % 16 == 0);
         
         b32 bResult = CreateConstantBuffer(Device, &Shader->Constants, Size, 0, &Shader->ConstantsBuffer);
@@ -217,7 +217,7 @@ void UpdateConstants(ID3D11DeviceContext *DeviceContext, shader_textured *Shader
     ZeroMemory(&MappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
     
     DeviceContext->Map(Shader->ConstantsBuffer.Ptr, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-    memcpy(MappedResource.pData, &Shader->Constants, sizeof(textured_shader_constants));
+    memcpy(MappedResource.pData, &Shader->Constants, sizeof(shader_textured::constants));
     DeviceContext->Unmap(Shader->ConstantsBuffer.Ptr, 0);
 }
 

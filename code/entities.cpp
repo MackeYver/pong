@@ -26,7 +26,7 @@
 #include "draw_calls.h"
 #include "game_main.h"
 
-#define kVelocityLimit V2(1000.0f, 1000.0f)
+#define kVelocityMax V2(1500.0f, 1500.0f)
 
 
 //
@@ -119,7 +119,7 @@ void InitBall(game_state *State, entity *Entity, mesh_index MIndex)
     f32 BallDensity = 0.0004f;
     
     body *Body = NewCircleBody(&State->Dynamics, 25.0f / 2.0f, Entity);
-    Body->dPMax = kVelocityLimit;
+    Body->dPMax = kVelocityMax;
     Body->dPMask = v2_one;
     Body->Damping = 0.0f;
     Body->InverseMass = 1.0f / (BallArea * BallDensity);
@@ -166,7 +166,7 @@ void InitPaddles(game_state *State, entity *LeftPaddle, entity *RightPaddle, mes
     {
         entity *Entity = State->Players[Index];
         body *Body = NewRectangleBody(&State->Dynamics, Size, Entity);
-        Body->dPMax = 2.0f * kVelocityLimit;
+        Body->dPMax = 2.0f * kVelocityMax;
         Body->dPMask = V2(0.0f, 1.0f);
         Body->Damping = 0.5f;
         Body->InverseMass = InverseMass;

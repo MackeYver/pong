@@ -56,14 +56,22 @@ b32 CreateBuffer(ID3D11Device *Device,
     BufferDesc.MiscFlags = 0;                    
     BufferDesc.StructureByteStride = ElementSize;
     
-    D3D11_SUBRESOURCE_DATA InitData;
-    ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-    
-    InitData.pSysMem = Data;
-    InitData.SysMemPitch = 0;
-    InitData.SysMemSlicePitch = 0;
-    
-    HRESULT HResult = Device->CreateBuffer(&BufferDesc, &InitData, &Buffer->Ptr);
+    HRESULT HResult;
+    if (Data && DataSize > 0)
+    {
+        D3D11_SUBRESOURCE_DATA InitData;
+        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
+        
+        InitData.pSysMem = Data;
+        InitData.SysMemPitch = 0;
+        InitData.SysMemSlicePitch = 0;
+        
+        HResult = Device->CreateBuffer(&BufferDesc, &InitData, &Buffer->Ptr);
+    }
+    else
+    {
+        HResult = Device->CreateBuffer(&BufferDesc, nullptr, &Buffer->Ptr);
+    }
     if (FAILED(HResult)) 
     {
         printf("%s: failed to create a buffer.\n", __FILE__);
@@ -84,7 +92,18 @@ b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSiz
                           D3D11_BIND_VERTEX_BUFFER, 
                           0, // No CPU access to this buffer!
                           Buffer);
-    
+    return Result;
+}
+
+
+b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer)
+{
+    b32 Result = false;
+    Result = CreateBuffer(Device, Data, DataSize, ElementSize, 
+                          D3D11_USAGE_DYNAMIC, 
+                          D3D11_BIND_VERTEX_BUFFER, 
+                          D3D11_CPU_ACCESS_WRITE,
+                          Buffer);
     return Result;
 }
 
@@ -97,7 +116,6 @@ b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size
                           D3D11_BIND_CONSTANT_BUFFER, 
                           D3D11_CPU_ACCESS_WRITE,
                           Buffer);
-    
     return Result;
 }
 

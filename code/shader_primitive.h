@@ -25,26 +25,46 @@
 #ifndef shader_primitive__h
 #define shader_primitive__h
 
-#include "types.h"
+#include "mathematics.h"
+#include "win32_dx_buffer.h"
 
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;
 struct ID3D11InputLayout;
 struct ID3D11Device;
 struct ID3D11DeviceContext;
-
+struct memory_arena;
 
 
 struct shader_primitive
 {
+    struct constants
+    {
+        m4 ObjectToWorld;
+        m4 WorldToClip;
+    };
+    
+    struct vs_input
+    {
+        v4 Colour;
+        v3 P;
+    };
+    
     ID3D11VertexShader *VertexProgram = nullptr;
     ID3D11PixelShader *PixelProgram = nullptr;
     ID3D11InputLayout *InputLayout = nullptr;
+    
+    dx_buffer VertexBuffer;
+    
+    dx_buffer ConstantsBuffer;
+    constants Constants;
 };
 
 b32 Init(ID3D11Device *Device, shader_primitive *Shader);
-void Use(shader_primitive *Shader);
+void Use(ID3D11DeviceContext *DC, shader_primitive *Shader);
 void Shutdown(shader_primitive *Shader);
 
-
+void UpdateConstants(ID3D11DeviceContext *DeviceContext, shader_primitive *Shader);
+void DrawPrimitives(ID3D11DeviceContext *DC, shader_primitive *Shader, D3D_PRIMITIVE_TOPOLOGY Topology, 
+                    memory_arena *Memory, u32 VertexCount);
 #endif

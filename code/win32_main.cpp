@@ -166,7 +166,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 static u32 CreateAppWindow(app_state *State, HINSTANCE hInstance, WNDPROC WindowProc)
 {
-    wchar_t const ClassName[] = L"particles";
+    wchar_t const ClassName[] = L"pong";
     
     WNDCLASS WC;
     

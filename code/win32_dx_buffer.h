@@ -43,6 +43,7 @@ struct dx_buffer
 };
 
 
+b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
 b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
 b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
 

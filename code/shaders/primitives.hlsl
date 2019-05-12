@@ -59,7 +59,8 @@ struct vs_output
 vs_output vMain(vs_input In)
 {
     vs_output Result;
-    Result.P = mul(float4(In.P, 1.0f), ObjectToWorld);
+    float4x4 ObjectToClip = mul(ObjectToWorld, WorldToClip);
+    Result.P = mul(float4(In.P, 1.0f), ObjectToClip);
     Result.C = In.C;
     
 	return Result;

@@ -48,16 +48,16 @@ struct draw_calls
     memory_arena Memory;
     
     memory_arena PrimitiveLinesMemory;
-    u32 LineCount;
+    u32 LineCount = 0;
     
     memory_arena PrimitiveTrianglesMemory;
-    u32 TriangleCount;
+    u32 TriangleCount = 0;
     
     display_metrics DisplayMetrics;
 };
 
 void Init(draw_calls *DrawCalls, size_t Size, display_metrics DisplayMetrics);
-void Clear(draw_calls *DrawCalls);
+void ClearMemory(draw_calls *DrawCalls);
 void Shutdown(draw_calls *DrawCalls);
 
 

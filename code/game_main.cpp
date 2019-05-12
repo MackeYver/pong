@@ -223,6 +223,15 @@ void Update(game_state *State, f32 dt)
         
         DetectCollisions(&State->Dynamics, Collisions);
         
+        body *BallBody = GetBody(&State->Dynamics, State->Ball->BodyIndex);
+        
+        {
+            f32 z = 0.8f;
+            v3 P0 = V3(0.0f, 0.0f, z);
+            v3 P1 = V3(BallBody->P, z);
+            PushPrimitiveLine(&State->DrawCalls, P0, P1, V4(1.0f, 1.0f, 0.0f, 1.0f));
+        }
+        
         for (auto& Collision : Collisions)
         {
             //
@@ -260,18 +269,22 @@ void Update(game_state *State, f32 dt)
             if (TheBallIsInvolved && APlayerIsInvolved)
             {
                 State->Audio.Play(State->Players[0]->Audio_BallBounce);
-                Collision.ForceModifier = 0.25f;
+                Collision.ForceModifier = 0.15f;
             }
             else if (TheBallIsInvolved && ABorderIsInvolved)
             {
                 State->Audio.Play(State->Walls[0]->Audio_BallBounce);
-                Collision.ForceModifier = -0.15f;
+                
+                f32 L = Length(BallBody->dP);
+                if (L > 900.0f)
+                {
+                    Collision.ForceModifier = -0.15f;
+                }
             }
             else if (APlayerIsInvolved && ABorderIsInvolved)
             {
                 Collision.SkipForceApplication = true;
             }
-            
         }
         
         ResolveCollisions(&State->Dynamics, Collisions, dt);
@@ -279,12 +292,11 @@ void Update(game_state *State, f32 dt)
         //
         // Check if any of the players scored.
         {
-            body *Body = GetBody(&State->Dynamics, State->Ball->BodyIndex);
-            if (Body->P.x < 0.0f)
+            if (BallBody->P.x < 0.0f)
             {
                 Score(State, 1);
             }
-            else if (Body->P.x > State->DrawCalls.DisplayMetrics.WindowWidth)
+            else if (BallBody->P.x > State->DrawCalls.DisplayMetrics.WindowWidth)
             {
                 Score(State, 0);
             }
@@ -312,8 +324,6 @@ void Update(game_state *State, f32 dt)
 void Shutdown(game_state *State)
 {
     assert(State);
-    
-    
 }
 
 
@@ -420,10 +430,32 @@ void Render(game_state *State)
     
     
     //
+    // @debug
+    {
+        v3 P0 = V3( 10.0f,  10.0f, 0.1f);
+        v3 P1 = V3(810.0f, 110.0f, 0.1f);
+        v3 P2 = V3(710.0f, 810.0f, 0.1f);
+        PushPrimitiveTriangleOutline(&State->DrawCalls, P0, P1, P2, V4(1.0f, 0.0f, 0.0f, 1.0f));
+        
+        P0 = V3(210.0f, 410.0f, 0.1f);
+        P1 = V3(510.0f, 450.0f, 0.1f);
+        P2 = V3(310.0f, 510.0f, 0.1f);
+        PushPrimitiveTriangleOutline(&State->DrawCalls, P0, P1, P2, V4(0.0f, 0.0f, 1.0f, 1.0f));
+        
+        P0 = V3(710.0f, 210.0f, 0.1f);
+        P1 = V3(810.0f, 310.0f, 0.1f);
+        PushPrimitiveRectangleOutline(&State->DrawCalls, P0, P1, V4(0.0f, 1.0f, 0.0f, 1.0f));
+        
+        P0 = V3(210.0f, 310.0f, 0.1f);
+        P1 = V3(610.0f, 410.0f, 0.1f);
+        PushPrimitiveRectangleFilled(&State->DrawCalls, P0, P1, V4(0.0f, 1.0f, 1.0f, 1.0f));
+    }
+    
+    //
     // Background
     {
         v4 Colour = V4(0.6f, 0.6f, 0.8f, 1.0f);
-        PushTexturedMesh(&State->DrawCalls, V3(0.0f, 0.0f, 0.5f), State->BackgroundMesh, State->BackgroundTexture, v2_one, Colour);
+        PushTexturedMesh(&State->DrawCalls, V3(0.0f, 0.0f, 0.9f), State->BackgroundMesh, State->BackgroundTexture, v2_one, Colour);
     }
     
     

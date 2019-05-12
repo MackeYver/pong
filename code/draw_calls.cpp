@@ -57,6 +57,8 @@ void Shutdown(draw_calls *DrawCalls)
 {
     assert(DrawCalls);
     Free(&DrawCalls->Memory);
+    Free(&DrawCalls->PrimitiveLinesMemory);
+    Free(&DrawCalls->PrimitiveTrianglesMemory);
 }
 
 
@@ -64,6 +66,94 @@ void ClearMemory(draw_calls *DrawCalls)
 {
     assert(DrawCalls);
     Clear(&DrawCalls->Memory);
+    
+    Clear(&DrawCalls->PrimitiveLinesMemory);
+    DrawCalls->LineCount = 0;
+    
+    Clear(&DrawCalls->PrimitiveTrianglesMemory);
+    DrawCalls->TriangleCount = 0;
+}
+
+
+
+
+//
+// Draw calls, primitives
+//
+
+struct vertex_PC
+{
+    v4 C;
+    v3 P;
+};
+
+void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+{
+    size_t Size = 2 * sizeof(vertex_PC);
+    if (RemainingSize(&DrawCalls->PrimitiveLinesMemory) < Size)
+    {
+        b32 Result = Resize(&DrawCalls->PrimitiveLinesMemory, 2 * DrawCalls->PrimitiveLinesMemory.Size);
+        assert(Result);
+    }
+    
+    vertex_PC *Vertices = reinterpret_cast<vertex_PC *>(Push(&DrawCalls->PrimitiveLinesMemory, Size));
+    Vertices[0].P = P0;
+    Vertices[0].C = Colour;
+    Vertices[1].P = P1;
+    Vertices[1].C = Colour;
+    
+    ++DrawCalls->LineCount;
+}
+
+
+void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+{
+    v3 P01 = V3(P1.x, P0.y, 0.5f * (P0.z + P1.z));
+    v3 P10 = V3(P0.x, P1.y, 0.5f * (P0.z + P1.z));
+    
+    PushPrimitiveLine(DrawCalls, P0, P01, Colour);
+    PushPrimitiveLine(DrawCalls, P01, P1, Colour);
+    PushPrimitiveLine(DrawCalls, P1, P10, Colour);
+    PushPrimitiveLine(DrawCalls, P10, P0, Colour);
+}
+
+
+void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
+{
+    PushPrimitiveLine(DrawCalls, P0, P1, Colour);
+    PushPrimitiveLine(DrawCalls, P1, P2, Colour);
+    PushPrimitiveLine(DrawCalls, P2, P0, Colour);
+}
+
+
+void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
+{
+    size_t Size = 3 * sizeof(vertex_PC);
+    if (RemainingSize(&DrawCalls->PrimitiveTrianglesMemory) < Size)
+    {
+        b32 Result = Resize(&DrawCalls->PrimitiveTrianglesMemory, 2 * DrawCalls->PrimitiveTrianglesMemory.Size);
+        assert(Result);
+    }
+    
+    vertex_PC *Vertices = reinterpret_cast<vertex_PC *>(Push(&DrawCalls->PrimitiveTrianglesMemory, Size));
+    Vertices[0].P = P0;
+    Vertices[0].C = Colour;
+    Vertices[1].P = P1;
+    Vertices[1].C = Colour;
+    Vertices[2].P = P2;
+    Vertices[2].C = Colour;
+    
+    DrawCalls->TriangleCount += 3;
+}
+
+
+void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+{
+    v3 P01 = V3(P1.x, P0.y, 0.5f * (P0.z + P1.z));
+    v3 P10 = V3(P0.x, P1.y, 0.5f * (P0.z + P1.z));
+    
+    PushPrimitiveTriangleFilled(DrawCalls, P0, P01, P1, Colour);
+    PushPrimitiveTriangleFilled(DrawCalls, P0, P1, P10, Colour);
 }
 
 
@@ -72,36 +162,6 @@ void ClearMemory(draw_calls *DrawCalls)
 //
 // Draw calls
 //
-
-void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
-{
-    
-}
-
-
-void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
-{
-    
-}
-
-
-void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
-{
-    
-}
-
-
-void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
-{
-    
-}
-
-
-void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
-{
-    
-}
-
 
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
 {

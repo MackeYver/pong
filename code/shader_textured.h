@@ -37,20 +37,14 @@ struct dx_mesh;
 struct dx_texture;
 
 
-struct textured_shader_constants
-{
-    m4 ObjectToWorld;
-    m4 WorldToClip;
-    v4 Colour;
-};
-
 
 struct shader_textured
 {
-    struct vs_input // Input to the vertex shaders
+    struct constants
     {
-        v3 P;
-        v2 T;
+        m4 ObjectToWorld;
+        m4 WorldToClip;
+        v4 Colour;
     };
     
     ID3D11VertexShader *VertexProgram = nullptr;
@@ -59,7 +53,7 @@ struct shader_textured
     ID3D11SamplerState *Sampler = nullptr;
     
     dx_buffer ConstantsBuffer;
-    textured_shader_constants Constants;
+    constants Constants;
 };
 
 

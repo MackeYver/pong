@@ -271,24 +271,31 @@ b32 Init(dx_state *State, HWND hWnd)
     {
         //
         // Primitive shader
-        b32 bResult = Init(State->Device, &State->ShaderPrimitive);
-        if (!bResult)
         {
-            printf("%s: failed to create shader program named: shader_primitive.\n", __FILE__);
-            return false;
+            b32 bResult = Init(State->Device, &State->ShaderPrimitive);
+            if (!bResult)
+            {
+                printf("%s: failed to create shader program named: shader_primitive.\n", __FILE__);
+                return false;
+            }
+            
+            f32 w = 1.0f / (0.5f * State->Width);
+            f32 h = 1.0f / (0.5f * State->Height);
+            State->ShaderPrimitive.Constants.WorldToClip = M4Scale(w, h, 1.0f) * M4Translation(-1.0f, -1.0f, 0.0f);
+            UpdateConstants(State->DeviceContext, &State->ShaderPrimitive);
         }
         
         
         //
         // Textured mesh
-        bResult = Init(State->Device, &State->ShaderTextured);
-        if (!bResult)
         {
-            printf("%s: failed to create shader program named: shader_textured.\n", __FILE__);
-            return false;
-        }
-        
-        {
+            b32 bResult = Init(State->Device, &State->ShaderTextured);
+            if (!bResult)
+            {
+                printf("%s: failed to create shader program named: shader_textured.\n", __FILE__);
+                return false;
+            }
+            
             f32 w = 1.0f / (0.5f * State->Width);
             f32 h = 1.0f / (0.5f * State->Height);
             State->ShaderTextured.Constants.WorldToClip = M4Scale(w, h, 1.0f) * M4Translation(-1.0f, -1.0f, 0.0f);
@@ -297,11 +304,13 @@ b32 Init(dx_state *State, HWND hWnd)
         
         //
         // Final render, renders the resolve texture to the screen
-        bResult = Init(State->Device, &State->ShaderFinal);
-        if (!bResult)
         {
-            printf("%s: failed to create shader program named: shader_final.\n", __FILE__);
-            return false;
+            b32 bResult = Init(State->Device, &State->ShaderFinal);
+            if (!bResult)
+            {
+                printf("%s: failed to create shader program named: shader_final.\n", __FILE__);
+                return false;
+            }
         }
     }
     
@@ -535,10 +544,6 @@ void BeginRendering(dx_state *State)
     // Set the RenderTargetTexture as the render target
     DC->OMSetDepthStencilState(State->DepthStencilState, 1);
     DC->OMSetRenderTargets(1, &State->RenderTargetView, State->DepthStencilView);
-    
-    //
-    // We only have one "effect"... Let's use that!
-    Use(DC, &State->ShaderTextured);
 }
 
 
@@ -575,7 +580,6 @@ void EndRendering(dx_state *State)
     
     //
     // Draw
-    //DrawTextureToScreen(DC, &State->ShadarFinal, ResolveTexture);
     DrawTextureToScreen(DC, &State->ShaderFinal, &State->ResolveTexture);
     
     //
@@ -594,14 +598,12 @@ void RenderTexturedMesh(dx_state *State, m4 ObjectToWorld, s32 MeshIndex, s32 Te
 {
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    //
-    // Set up constants
-    State->ShaderTextured.Constants.Colour = Colour;
+    State->ShaderTextured.Constants.Colour = v4_one;
     State->ShaderTextured.Constants.ObjectToWorld = ObjectToWorld;
     UpdateConstants(DC, &State->ShaderTextured);
     
-    //
-    // Draw
+    Use(DC, &State->ShaderTextured);
+    
     dx_mesh *Mesh = &State->Meshes[MeshIndex];
     dx_texture *Texture = &State->Textures[TextureIndex];
     DrawMesh(DC, &State->ShaderTextured, Mesh, Texture);
@@ -651,7 +653,30 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
         CurrAddress += Header->Size;
     }
     
-    Clear(&DrawCalls->Memory);
     
+    //
+    // Process primitives
+    if (DrawCalls->LineCount > 0)
+    {
+        ID3D11DeviceContext *DC = State->DeviceContext;
+        
+        Use(DC, &State->ShaderPrimitive);
+        DrawPrimitives(DC, &State->ShaderPrimitive, D3D_PRIMITIVE_TOPOLOGY_LINELIST, 
+                       &DrawCalls->PrimitiveLinesMemory, 2 * DrawCalls->LineCount);
+    }
+    
+    if (DrawCalls->TriangleCount > 0)
+    {
+        ID3D11DeviceContext *DC = State->DeviceContext;
+        
+        Use(DC, &State->ShaderPrimitive);
+        DrawPrimitives(DC, &State->ShaderPrimitive, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, 
+                       &DrawCalls->PrimitiveTrianglesMemory, 3 * DrawCalls->TriangleCount);
+    }
+    
+    
+    //
+    // Done!
+    ClearMemory(DrawCalls);
     EndRendering(State);
 }

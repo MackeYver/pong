@@ -86,6 +86,14 @@ static b32 Init(memory_arena *Memory, size_t Size)
 }
 
 
+static size_t RemainingSize(memory_arena *Memory)
+{
+    size_t Result = Memory->Size - Memory->Used;
+    
+    return Result;
+}
+
+
 static b32 Resize(memory_arena *Memory, size_t NewSize)
 {
     b32 Result = false;

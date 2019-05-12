@@ -276,11 +276,6 @@ void UpdateBody(body& Body, f32 dt)
     
     Body.dP += Hadamard(Body.dPMask, (ddP * dt) - (Body.Damping * Body.dP));
     
-    if (Body.dP.y > Body.dPMax.y)
-    {
-        printf("Full speta!\n");
-    }
-    
     //
     // Speed limit
     Body.dP = V2(Min(Body.dP.x, Body.dPMax.x),
