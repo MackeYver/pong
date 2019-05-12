@@ -22,46 +22,34 @@
 // SOFTWARE.
 //
 
+#ifndef shader_final__h
+#define shader_final__h
 
-//
-// Structs
-//
+#include "mathematics.h"
+#include "win32_dx_buffer.h"
 
-struct vs_input
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D11InputLayout;
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+struct dx_texture;
+
+
+struct shader_final
 {
-    float2 P : Position0;
-    float2 T : TexCoord0;
+    ID3D11VertexShader *VertexProgram = nullptr;
+    ID3D11PixelShader *PixelProgram = nullptr;
+    ID3D11InputLayout *InputLayout = nullptr;
+    ID3D11SamplerState *Sampler = nullptr;
+    dx_buffer VertexBuffer;
 };
 
 
-struct ps_input
-{	
-    float4 P : SV_Position;
-    float2 T : TexCoord0;
-};
+b32 Init(ID3D11Device *Device, shader_final *Shader);
+void Shutdown(shader_final *Shader);
 
+void Use(ID3D11DeviceContext *DC, shader_final *Shader);
+void DrawTextureToScreen(ID3D11DeviceContext *DC, shader_final *Shader, dx_texture *Texture);
 
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
-
-
-
-
-//
-// Shaders
-//
-
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
-    
-    return Result;
-}
-
-
-float4 pMain(ps_input In) : SV_TARGET
-{
-    return gTexture.Sample(gSampler, In.T);
-}
+#endif

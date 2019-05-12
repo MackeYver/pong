@@ -22,46 +22,32 @@
 // SOFTWARE.
 //
 
+#ifndef win32_dx_mesh__h
+#define win32_dx_mesh__h
 
-//
-// Structs
-//
+#include <d3d11.h>
+#include "types.h"
 
-struct vs_input
+struct mesh;
+
+
+
+struct dx_mesh
 {
-    float2 P : Position0;
-    float2 T : TexCoord0;
-};
-
-
-struct ps_input
-{	
-    float4 P : SV_Position;
-    float2 T : TexCoord0;
-};
-
-
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
-
-
-
-
-//
-// Shaders
-//
-
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
+    ID3D11Buffer *Positions = nullptr;
+    ID3D11Buffer *Normals = nullptr;
+    ID3D11Buffer *UVs = nullptr;
+    ID3D11Buffer *Indices = nullptr;
     
-    return Result;
-}
+    D3D_PRIMITIVE_TOPOLOGY Topology;
+    
+    u32 VertexCount = 0;
+    u32 IndexCount = 0;
+};
+
+s32 CreateMesh(void *DXState, mesh *Mesh);
+void Free(dx_mesh *Mesh);
 
 
-float4 pMain(ps_input In) : SV_TARGET
-{
-    return gTexture.Sample(gSampler, In.T);
-}
+
+#endif

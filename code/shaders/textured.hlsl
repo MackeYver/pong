@@ -21,21 +21,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+// TODO(Marcus): Worry about data alignment (16 bytes)
+//
 
 
 //
 // Structs
 //
 
+cbuffer textured_shader_constants : register(b0)
+{
+    float4x4 ObjectToWorld;
+    float4x4 WorldToClip;
+    float4   Colour;
+};
+
+
 struct vs_input
 {
-    float2 P : Position0;
+    float3 P : Position0;
     float2 T : TexCoord0;
 };
 
 
 struct ps_input
-{	
+{
     float4 P : SV_Position;
     float2 T : TexCoord0;
 };
@@ -48,20 +58,30 @@ SamplerState gSampler : register(s0);
 
 
 //
-// Shaders
+// Vertex shader
 //
 
 ps_input vMain(vs_input In)
 {
     ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
+    float4x4 ObjectToClip = mul(ObjectToWorld, WorldToClip);
+    Result.P = mul(float4(In.P, 1.0f), ObjectToClip);
     Result.T = In.T;
     
     return Result;
 }
 
 
-float4 pMain(ps_input In) : SV_TARGET
+
+
+//
+// Pixel shader
+//
+
+float4 pMain(ps_input In) : SV_Target
 {
-    return gTexture.Sample(gSampler, In.T);
+    float4 TextureColour = gTexture.Sample(gSampler, In.T);
+    float4 Result = TextureColour * Colour;
+    
+    return Result;
 }

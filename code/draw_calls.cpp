@@ -33,8 +33,10 @@
 #endif
 
 
+
+
 //
-// Init and shutdown, basically memory stuff
+// Init and shutdown
 //
 
 void Init(draw_calls *DrawCalls, size_t MemorySize, display_metrics DisplayMetrics)
@@ -42,51 +44,28 @@ void Init(draw_calls *DrawCalls, size_t MemorySize, display_metrics DisplayMetri
     assert(DrawCalls);
     assert(MemorySize > 0);
     
-    DrawCalls->Memory = static_cast<u8 *>(calloc(1, MemorySize));
-    assert(DrawCalls->Memory);
-    
-    DrawCalls->MemorySize = MemorySize;
-    DrawCalls->MemoryUsed = 0;
-    
     DrawCalls->DisplayMetrics = DisplayMetrics;
+    
+    Init(&DrawCalls->Memory, MemorySize);
+    
+    Init(&DrawCalls->PrimitiveLinesMemory, 1 << 10); // @debug
+    Init(&DrawCalls->PrimitiveTrianglesMemory, 1 << 10); // @debug
 }
 
 
 void Shutdown(draw_calls *DrawCalls)
 {
     assert(DrawCalls);
-    
-    if (DrawCalls->Memory)
-    {
-        free(DrawCalls->Memory);
-    }
-    
-    DrawCalls->Memory = nullptr;
-    DrawCalls->MemoryUsed = 0;
-    DrawCalls->MemorySize = 0;
+    Free(&DrawCalls->Memory);
 }
+
 
 void ClearMemory(draw_calls *DrawCalls)
 {
     assert(DrawCalls);
-    DrawCalls->MemoryUsed = 0;
+    Clear(&DrawCalls->Memory);
 }
 
-u8 *PushMemory(draw_calls *DrawCalls, size_t Size)
-{
-    assert(DrawCalls);
-    assert(DrawCalls->Memory);
-    
-    u8 *Result = nullptr;
-    
-    if ((DrawCalls->MemorySize - DrawCalls->MemoryUsed) >= Size)
-    {
-        Result = (DrawCalls->Memory + DrawCalls->MemoryUsed);
-        DrawCalls->MemoryUsed += Size;
-    }
-    
-    return Result;
-}
 
 
 
@@ -94,90 +73,43 @@ u8 *PushMemory(draw_calls *DrawCalls, size_t Size)
 // Draw calls
 //
 
-void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour)
+void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 {
-    assert(DrawCalls);
-    assert(DrawCalls->Memory);
     
-    size_t DrawCallSize = sizeof(draw_call_filled_rectangle);
-    draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(PushMemory(DrawCalls, DrawCallSize));
-    assert(DrawCall);
-    
-    DrawCall->Header.Size = DrawCallSize;
-    DrawCall->Header.Type = DrawCallType_FilledRectangle;
-    
-    DrawCall->Colour = Colour;
-    DrawCall->P = P;
-    DrawCall->Size = Size;
 }
 
 
-void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index Index, v4 Colour)
+void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
 {
-    assert(DrawCalls);
-    assert(DrawCalls->Memory);
     
-    size_t DrawCallSize = sizeof(draw_call_textured_rectangle);
-    draw_call_textured_rectangle *DrawCall = reinterpret_cast<draw_call_textured_rectangle *>(PushMemory(DrawCalls, DrawCallSize));
-    assert(DrawCall);
-    
-    DrawCall->Header.Size = DrawCallSize;
-    DrawCall->Header.Type = DrawCallType_TexturedRectangle;
-    
-    DrawCall->Colour = Colour;
-    DrawCall->P = P;
-    DrawCall->Size = Size;
-    DrawCall->TextureIndex = Index;
 }
 
 
-void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour)
+void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
 {
-    assert(DrawCalls);
-    assert(DrawCalls->Memory);
     
-    size_t DrawCallSize = sizeof(draw_call_filled_circle);
-    draw_call_filled_circle *DrawCall = reinterpret_cast<draw_call_filled_circle *>(PushMemory(DrawCalls, DrawCallSize));
-    assert(DrawCall);
-    
-    DrawCall->Header.Size = DrawCallSize;
-    DrawCall->Header.Type = DrawCallType_FilledCircle;
-    
-    DrawCall->Colour = Colour;
-    DrawCall->P = P;
-    DrawCall->Radius = Radius;
 }
 
 
-void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index Index, v4 Colour)
+void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 {
-    assert(DrawCalls);
-    assert(DrawCalls->Memory);
     
-    size_t DrawCallSize = sizeof(draw_call_textured_circle);
-    draw_call_textured_circle *DrawCall = reinterpret_cast<draw_call_textured_circle *>(PushMemory(DrawCalls, DrawCallSize));
-    assert(DrawCall);
+}
+
+
+void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+{
     
-    DrawCall->Header.Size = DrawCallSize;
-    DrawCall->Header.Type = DrawCallType_TexturedCircle;
-    
-    DrawCall->Colour = Colour;
-    DrawCall->P = P;
-    DrawCall->Radius = Radius;
-    DrawCall->TextureIndex = Index;
 }
 
 
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
 {
-    assert(DrawCalls);
-    assert(DrawCalls->Memory);
-    
     size_t DrawCallSize = sizeof(draw_call_text);
     size_t TextSize = (wcslen(Text) + 1) * sizeof(wchar_t);
     size_t TotalSize = DrawCallSize + TextSize;
     
-    draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(PushMemory(DrawCalls, TotalSize));
+    draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(Push(&DrawCalls->Memory, TotalSize));
     assert(DrawCall);
     
     DrawCall->Header.Size = TotalSize;
@@ -191,20 +123,18 @@ void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
 }
 
 
-void PushTexturedMesh(draw_calls *DrawCalls, v2 P, mesh_index MeshIndex, texture_index TextureIndex, v2 Size, v4 Colour)
+void PushTexturedMesh(draw_calls *DrawCalls, v3 P, mesh_index MeshIndex, texture_index TextureIndex, v2 Size, v4 Colour)
 {
     assert(DrawCalls);
-    assert(DrawCalls->Memory);
-    
     size_t DrawCallSize = sizeof(draw_call_textured_mesh);
     
-    draw_call_textured_mesh *DrawCall = reinterpret_cast<draw_call_textured_mesh *>(PushMemory(DrawCalls, DrawCallSize));
+    draw_call_textured_mesh *DrawCall = reinterpret_cast<draw_call_textured_mesh *>(Push(&DrawCalls->Memory, DrawCallSize));
     assert(DrawCall);
     
     DrawCall->Header.Size = DrawCallSize;
     DrawCall->Header.Type = DrawCallType_TexturedMesh;
     
-    DrawCall->ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(P.x, P.y, 0.0f);
+    DrawCall->ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(P.x, P.y, P.z);
     DrawCall->MeshIndex = MeshIndex;
     DrawCall->TextureIndex = TextureIndex;
     DrawCall->Colour = Colour;

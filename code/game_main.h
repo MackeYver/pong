@@ -29,74 +29,11 @@
 #include "audio.h"
 #include "dynamics.h"
 #include "resources.h"
+#include "entities.h"
 
 #include <vector>
 #include <map>
 
-
-
-//
-// Entities
-//
-
-struct player
-{
-    body_index BodyIndex = -1;
-    v4 Colour = v4_one;
-    u32 Score = 0;
-};
-
-
-struct ball
-{
-    body_index BodyIndex = -1;
-    v4 Colour = v4_one;
-};
-
-
-struct border
-{
-    body_index BodyIndex = -1;
-    v4 Colour = v4_one;
-};
-
-
-
-
-//
-// Game resources
-//
-
-// Audio
-enum audio_handle // @debug
-{
-    AudioHandle_Theme = 0,
-    AudioHandle_PaddleBounce,
-    AudioHandle_BorderBounce,
-    AudioHandle_Score,
-    
-    AudioHandle_Count
-};
-
-// Textures
-enum texture_handle // @debug
-{
-    TextureHandle_Ball = 0,
-    TextureHandle_Paddle,
-    TextureHandle_Brick,
-    
-    TextureHandle_Count
-};
-
-// Meshes
-enum mesh_handle // @debug
-{
-    MeshHandle_Ball = 0,
-    MeshHandle_Paddle,
-    MeshHandle_Wall,
-    
-    MeshHandle_Count
-};
 
 
 
@@ -124,13 +61,14 @@ struct game_state
     //
     // Rendering
     draw_calls DrawCalls;
-    texture_index TextureHandles[TextureHandle_Count];
-    mesh_index MeshHandles[MeshHandle_Count];
+    mesh_index BackgroundMesh;
+    texture_index BackgroundTexture;
     
     //
     // Audio
     audio Audio;
-    voice_index AudioHandles[AudioHandle_Count];
+    voice_index Audio_Theme;
+    voice_index Audio_Score;
     
     //
     // Input
@@ -142,13 +80,11 @@ struct game_state
     
     //
     // Entities
-    player Players[2];
-    border Borders[2];
-    ball Ball;
-    
-    //
-    // Game data
-    v4 BackgroundColour;
+    entity Entities[5];
+    entity *Players[2];
+    entity *Walls[2];
+    entity *Ball;
+    u32 Scores[2];
     
     u8 PlayerCount;
     game_mode GameMode = GameMode_Inactive;

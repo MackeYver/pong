@@ -22,46 +22,31 @@
 // SOFTWARE.
 //
 
+#ifndef entities__h
+#define entities__h
 
-//
-// Structs
-//
+#include "mathematics.h"
+#include "resources.h"
+#include "dynamics.h"
+struct draw_calls;
+struct game_state;
 
-struct vs_input
+
+struct entity
 {
-    float2 P : Position0;
-    float2 T : TexCoord0;
-};
-
-
-struct ps_input
-{	
-    float4 P : SV_Position;
-    float2 T : TexCoord0;
-};
-
-
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
-
-
-
-
-//
-// Shaders
-//
-
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
+    v4 Colour;
+    v2 P; // read-only! Note: this is probably a bad idea...
+    v2 Size = v2_one;
+    v2 Scale = v2_one;
+    body_index BodyIndex = -1;
+    mesh_index MeshIndex = -1;
+    texture_index TextureIndex = -1;
     
-    return Result;
-}
+    voice_index Audio_BallBounce = -1;
+};
 
+void InitEntities(game_state *State);
+void Update(dynamics_state *State, entity *Entity);
+void Render(draw_calls *DrawCalls, entity *Entity);
 
-float4 pMain(ps_input In) : SV_TARGET
-{
-    return gTexture.Sample(gSampler, In.T);
-}
+#endif

@@ -42,7 +42,7 @@
 void Render(game_state *State);
 void ProcessInput(game_state *State);
 
-void Reset(game_state *State);
+void ResetPositions(game_state *State);
 void NewGame(game_state *State);
 void Start(game_state *State);
 void Pause(game_state *State);
@@ -61,159 +61,59 @@ void Init(game_state *State)
     assert(State);
     
     State->GameMode = GameMode_Inactive;
+    State->Scores[0] = 0;
+    State->Scores[1] = 0;
+    
     
     //
-    // Setup entities (hardcoded for now)
+    // Setup entities
+    InitEntities(State);
+    ResetPositions(State);
+    
+    
+    //
+    // Game audio
     {
+        voice_index VIndex = LoadWAV(&State->Resources, "data\\theme.wav");
+        assert(VIndex >= 0);
+        State->Audio_Theme = VIndex;
         
-        //
-        // Players
-        {
-            v2 Size = V2(25.0f, 140.0f);
-            v2 SpeedLimit = V2(1000.0f, 1000.0f);
-            
-            f32 PaddleArea = Size.x * Size.y;
-            f32 PaddleDensity = 0.0005f;
-            f32 PaddleInverseMass = 1.0f / (PaddleArea * PaddleDensity);
-            
-            // Player0
-            State->Players[0].Colour = V4(1.0f, 0.0f, 0.0f, 1.0f);
-            State->Players[0].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Players[0]);
-            body *Body = GetBody(&State->Dynamics, State->Players[0].BodyIndex);
-            Body->dPMax = 2.0f*SpeedLimit;
-            Body->dPMask = V2(0.0f, 1.0f);
-            Body->Damping = 0.5f;
-            Body->InverseMass = PaddleInverseMass;
-            
-            // Player1
-            State->Players[1].Colour = V4(0.0f, 1.0f, 0.0f, 1.0f);
-            State->Players[1].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Players[1]);
-            Body = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
-            Body->dPMax = 2.0f*SpeedLimit;
-            Body->dPMask = V2(0.0f, 1.0f);
-            Body->Damping = 0.5f;
-            Body->InverseMass = PaddleInverseMass;
-            
-            
-            //
-            // Ball
-            f32 BallRadius = 25.0f;
-            f32 BallArea = Pi32 * BallRadius * BallRadius;
-            f32 BallDensity = 0.0004f;
-            
-            State->Ball.Colour = V4(1.0f, 1.0f, 1.0f, 1.0f);
-            State->Ball.BodyIndex = NewRectangleBody(&State->Dynamics, V2(25.0f, 25.0f), &State->Ball);
-            Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
-            Body->dPMax = SpeedLimit;
-            Body->dPMask = v2_one;
-            Body->Damping = 0.0f;
-            Body->InverseMass = 1.0f / (BallArea * BallDensity);
-            
-            Reset(State); // Resets the dynamic state (P, dP, etc..)
-        }
-        
-        
-        //
-        // Borders
-        {
-            f32 const Width  = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
-            f32 const Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
-            v2 const Size = V2(Width, 0.05f * Height);
-            
-            f32 const MidX = 0.5f * Width;
-            f32 const TopY = (f32)Height - 0.5f * Size.y;
-            f32 const BottomY = 0.5f * Size.y;
-            
-            //
-            // Bottom border
-            State->Borders[0].Colour = V4(0.0f, 0.0f, 1.0f, 1.0f);
-            State->Borders[0].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Borders[0]);
-            body *Border = GetBody(&State->Dynamics, State->Borders[0].BodyIndex);
-            Border->P = V2(MidX, BottomY);
-            Border->InverseMass = 0.0f;
-            Border->dPMask = v2_zero;
-            
-            //
-            // Top border
-            State->Borders[1].Colour = V4(0.0f, 0.0f, 1.0f, 1.0f);
-            State->Borders[1].BodyIndex = NewRectangleBody(&State->Dynamics, Size, &State->Borders[1]);
-            Border = GetBody(&State->Dynamics, State->Borders[1].BodyIndex);
-            Border->P = V2(MidX, TopY);
-            Border->InverseMass = 0.0f;
-            Border->dPMask = v2_zero;
-        }
+        VIndex = LoadWAV(&State->Resources, "data\\score.wav");
+        assert(VIndex >= 0);
+        State->Audio_Score = VIndex;
     }
     
-    
     //
-    // Load audio
+    // Background texture and mesh
     {
-        char const *PathAndFilename[] = 
-        {
-            "data\\theme.wav",
-            "data\\paddle_bounce.wav",
-            "data\\border_bounce.wav",
-            "data\\score.wav",
-        };
+        // Texture
+        texture_index TIndex = LoadBMP(&State->Resources, "data\\background.bmp");
+        assert(TIndex >= 0);
+        State->BackgroundTexture = TIndex;
         
-        for (u32 Index = 0; Index < AudioHandle_Count; ++Index)
-        {
-            voice_index VIndex = LoadWAV(&State->Resources, PathAndFilename[Index]);
-            assert(VIndex >= 0);
-            State->AudioHandles[Index] = VIndex;
-        }
-        
-        State->Audio.Play(AudioHandle_Theme);
-    }
-    
-    
-    //
-    // Load textures
-    {
-        char const *PathAndFilename[] = 
-        {
-            "data\\ball.bmp",
-            "data\\paddle.bmp",
-            "data\\brick.bmp",
-            
-        };
-        
-        for (u32 Index = 0; Index < TextureHandle_Count; ++Index)
-        {
-            texture_index TIndex = LoadBMP(&State->Resources, PathAndFilename[Index]);
-            assert(TIndex >= 0);
-            State->TextureHandles[Index] = TIndex;
-        }
-    }
-    
-    
-    //
-    // Meshes
-    {
-        f32 Width = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
-        f32 Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
-        f32 const w = 0.5f * Width;
-        f32 const h = 0.5f * 0.05f * Height;
+        // Mesh
+        f32 const w = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
+        f32 const h = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
         
         v3 P[] =
         {
-            {-w, +h, 0.0f},
-            {-w, -h, 0.0f},
-            {+w, -h, 0.0f},
+            {0.0f,    h, 0.0f},
+            {0.0f, 0.0f, 0.0f},
+            {+w  , 0.0f, 0.0f},
             
-            {-w, +h, 0.0f},
-            {+w, -h, 0.0f},
-            {+w, +h, 0.0f},
+            {0.0f,    h, 0.0f},
+            {   w, 0.0f, 0.0f},
+            {   w,    h, 0.0f},
         };
         
-        f32 s = Width / 128.0f;
-        f32 t = 1.0;
+        f32 s = w / 128.0f;
+        f32 t = h / 128.0f;
         
         v2 UV[] =
         {
             {0.0f, 0.0f},
             {0.0f,    t},
-            {   s,    t},
+            {s   ,    t},
             
             {0.0f, 0.0f},
             {   s,    t},
@@ -222,13 +122,12 @@ void Init(game_state *State)
         
         mesh_index MIndex = LoadMesh(&State->Resources, P, UV, 6);
         assert(MIndex >= 0);
-        State->MeshHandles[MeshHandle_Wall] = MIndex;
+        State->BackgroundMesh = MIndex;
     }
     
     
     //
     // Game state
-    State->BackgroundColour = V4(0.0f, 0.0f, 1.0f, 1.0f); // TODO(Marcus): currently unused!
     State->PlayerCount = 0;
     
     
@@ -238,6 +137,8 @@ void Init(game_state *State)
         time_t Time = time(nullptr) * time(nullptr);
         srand(static_cast<unsigned int>(Time));
     }
+    
+    State->Audio.Play(State->Audio_Theme);
 }
 
 
@@ -248,14 +149,14 @@ void UpdateAI(game_state *State, f32 dt)
         return;
     }
     
-    body *BallBody = GetBody(&State->Dynamics, State->Ball.BodyIndex);
+    body *BallBody = GetBody(&State->Dynamics, State->Ball->BodyIndex);
     f32 LengthFactor = 0.8f;
     
     //
     // Left paddle, only if we're 0 players
     if (State->PlayerCount == 0)
     {
-        body *PaddleBody = GetBody(&State->Dynamics, State->Players[0].BodyIndex);
+        body *PaddleBody = GetBody(&State->Dynamics, State->Players[0]->BodyIndex);
         
         State->PressedKeys.erase(0x57);
         State->PressedKeys.erase(0x53);
@@ -276,7 +177,7 @@ void UpdateAI(game_state *State, f32 dt)
     //
     // Right paddle, if < 2 players
     {
-        body *PaddleBody = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
+        body *PaddleBody = GetBody(&State->Dynamics, State->Players[1]->BodyIndex);
         
         State->PressedKeys.erase(0x28);
         State->PressedKeys.erase(0x26);
@@ -333,21 +234,21 @@ void Update(game_state *State, f32 dt)
             
             //
             // Check what entities were involved in the collision
-            if ((Collision.BodiesInvolved[0] == State->Ball.BodyIndex) || (Collision.BodiesInvolved[1] == State->Ball.BodyIndex))
+            if ((Collision.BodiesInvolved[0] == State->Ball->BodyIndex) || (Collision.BodiesInvolved[1] == State->Ball->BodyIndex))
             {
                 TheBallIsInvolved = true;
             }
             
             for (u32 Index = 0; Index < 2; ++Index)
             {
-                if ((Collision.BodiesInvolved[0] == State->Players[Index].BodyIndex) ||
-                    (Collision.BodiesInvolved[1] == State->Players[Index].BodyIndex))
+                if ((Collision.BodiesInvolved[0] == State->Players[Index]->BodyIndex) ||
+                    (Collision.BodiesInvolved[1] == State->Players[Index]->BodyIndex))
                 {
                     APlayerIsInvolved = true;
                 }
                 
-                if ((Collision.BodiesInvolved[0] == State->Borders[Index].BodyIndex) ||
-                    (Collision.BodiesInvolved[1] == State->Borders[Index].BodyIndex))
+                if ((Collision.BodiesInvolved[0] == State->Walls[Index]->BodyIndex) ||
+                    (Collision.BodiesInvolved[1] == State->Walls[Index]->BodyIndex))
                 {
                     ABorderIsInvolved = true;
                 }
@@ -358,12 +259,12 @@ void Update(game_state *State, f32 dt)
             // Play sounds
             if (TheBallIsInvolved && APlayerIsInvolved)
             {
-                State->Audio.Play(AudioHandle_PaddleBounce);
+                State->Audio.Play(State->Players[0]->Audio_BallBounce);
                 Collision.ForceModifier = 0.25f;
             }
             else if (TheBallIsInvolved && ABorderIsInvolved)
             {
-                State->Audio.Play(AudioHandle_BorderBounce);
+                State->Audio.Play(State->Walls[0]->Audio_BallBounce);
                 Collision.ForceModifier = -0.15f;
             }
             else if (APlayerIsInvolved && ABorderIsInvolved)
@@ -374,20 +275,30 @@ void Update(game_state *State, f32 dt)
         }
         
         ResolveCollisions(&State->Dynamics, Collisions, dt);
+        
+        //
+        // Check if any of the players scored.
+        {
+            body *Body = GetBody(&State->Dynamics, State->Ball->BodyIndex);
+            if (Body->P.x < 0.0f)
+            {
+                Score(State, 1);
+            }
+            else if (Body->P.x > State->DrawCalls.DisplayMetrics.WindowWidth)
+            {
+                Score(State, 0);
+            }
+        }
     }
     
     
     //
-    // Check if any of the players scored.
+    // Update entities
     {
-        body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
-        if (Body->P.x < 0.0f)
+        for (u32 Index = 0; Index < 5; ++Index)
         {
-            Score(State, 1);
-        }
-        else if (Body->P.x > State->DrawCalls.DisplayMetrics.WindowWidth)
-        {
-            Score(State, 0);
+            entity *Entity = &State->Entities[Index];
+            Update(&State->Dynamics, Entity);
         }
     }
     
@@ -432,7 +343,7 @@ void ServeBoll(game_state *State)
         Angle = Pi32 - 0.5f*Theta + Angle;
     }
     
-    body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
+    body *Body = GetBody(&State->Dynamics, State->Ball->BodyIndex);
     Body->F = V2(Cos(Angle), Sin(Angle)) * 30000.0f;
 }
 
@@ -442,9 +353,9 @@ void Start(game_state *State)
 {
     assert(State);
     
-    State->Audio.Stop(AudioHandle_Theme);
+    State->Audio.Stop(State->Audio_Theme);
     
-    Reset(State);
+    ResetPositions(State);
     State->GameMode = GameMode_Playing;
     
     ServeBoll(State);
@@ -456,13 +367,13 @@ void NewGame(game_state *State)
 {
     assert(State);
     
-    State->Audio.Stop(AudioHandle_Theme);
+    State->Audio.Stop(State->Audio_Theme);
     
-    Reset(State);
+    ResetPositions(State);
     State->GameMode = GameMode_Playing;
     
-    State->Players[0].Score = 0;
-    State->Players[1].Score = 0;
+    State->Scores[0] = 0;
+    State->Scores[1] = 0;
     
     ServeBoll(State);
 }
@@ -470,11 +381,11 @@ void NewGame(game_state *State)
 
 void Score(game_state *State, u32 ScoringPlayerIndex)
 {
-    State->Audio.Play(AudioHandle_Score);
+    State->Audio.Play(State->Audio_Score);
     
     State->GameMode = GameMode_Scored;
-    ++State->Players[ScoringPlayerIndex].Score;
-    Reset(State);
+    ++State->Scores[ScoringPlayerIndex];
+    ResetPositions(State);
 }
 
 
@@ -491,7 +402,7 @@ void End(game_state *State)
     assert(State);
     
     State->GameMode = GameMode_Inactive;
-    State->Audio.Play(AudioHandle_Theme);
+    State->Audio.Play(State->Audio_Theme);
 }
 
 
@@ -501,83 +412,48 @@ void End(game_state *State)
 // Rendering
 //
 
-void RenderScores(game_state *State)
-{
-    draw_calls *DrawCalls = &State->DrawCalls;
-    
-    f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
-    f32 const Height = (f32)DrawCalls->DisplayMetrics.WindowHeight;
-    
-    //
-    // Scores
-    wchar_t ScoreString[4];
-    _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[0].Score);
-    PushText(DrawCalls, V2(0.5f * Width - 70.0f, 25.0f), ScoreString);
-    
-    _snwprintf_s(ScoreString, 4, 3, L"%u", State->Players[1].Score);
-    PushText(DrawCalls, V2(0.5f * Width + 70.0f, 25.0f), ScoreString);
-}
-
-
-texture_index GetTexture(game_state *State, texture_handle Handle)
-{
-    texture_index Result = -1;
-    
-    if ((Handle >= 0) && (Handle < TextureHandle_Count))
-    {
-        Result = State->TextureHandles[Handle];
-    }
-    
-    return Result;
-}
-
-
-mesh_index GetMesh(game_state *State, mesh_handle Handle)
-{
-    mesh_index Result = -1;
-    
-    if ((Handle >= 0) && (Handle < MeshHandle_Count))
-    {
-        Result = State->MeshHandles[Handle];
-    }
-    
-    return Result;
-}
-
-
 void Render(game_state *State)
 {
     assert(State);
     
     draw_calls *DrawCalls = &State->DrawCalls;
     
+    
+    //
+    // Background
+    {
+        v4 Colour = V4(0.6f, 0.6f, 0.8f, 1.0f);
+        PushTexturedMesh(&State->DrawCalls, V3(0.0f, 0.0f, 0.5f), State->BackgroundMesh, State->BackgroundTexture, v2_one, Colour);
+    }
+    
+    
+    //
+    // Entities
+    {
+        for (u32 Index = 0; Index < 5; ++Index)
+        {
+            entity *Entity = &State->Entities[Index];
+            Render(&State->DrawCalls, Entity);
+        }
+    }
+    
+    
     f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
     f32 const Height = (f32)DrawCalls->DisplayMetrics.WindowHeight;
     
+    
     //
-    // Render
-    {
-        for (u32 Index = 0; Index < 2; ++Index)
-        {
-            // Paddle
-            body *Body = GetBody(&State->Dynamics, State->Players[Index].BodyIndex);
-            texture_index TextureIndex = GetTexture(State, TextureHandle_Paddle);
-            PushTexturedRectangle(DrawCalls, Body->P, 2.0f*Body->Shape.HalfSize, TextureIndex);
-            
-            // Border
-            Body = GetBody(&State->Dynamics, State->Borders[Index].BodyIndex);
-            TextureIndex = GetTexture(State, (texture_handle)((u32)TextureHandle_Brick));
-            mesh_index MeshIndex = GetMesh(State, (mesh_handle)((u32)MeshHandle_Wall));
-            PushTexturedMesh(DrawCalls, Body->P, MeshIndex, TextureIndex); 
-        }
-        
-        body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
-        texture_index TextureIndex = GetTexture(State, TextureHandle_Ball);
-        PushTexturedCircle(DrawCalls, Body->P, Body->Shape.Radius, TextureIndex);
-    }
+    // Scores
+    wchar_t ScoreString[4];
+    _snwprintf_s(ScoreString, 4, 3, L"%u", State->Scores[0]);
+    PushText(DrawCalls, V2(0.5f * Width - 70.0f, 25.0f), ScoreString);
     
-    RenderScores(State);
+    _snwprintf_s(ScoreString, 4, 3, L"%u", State->Scores[1]);
+    PushText(DrawCalls, V2(0.5f * Width + 70.0f, 25.0f), ScoreString);
     
+    
+    //
+    // Text
     switch (State->GameMode)
     {
         case GameMode_Inactive:
@@ -639,7 +515,7 @@ void ProcessInput(game_state *State)
     }
     else if (State->GameMode == GameMode_Scored)
     {
-        if (State->PressedKeys.count(0x50) > 0) // P
+        if (State->PressedKeys.count(0x50) > 0 || State->PlayerCount == 0) // P
         {
             State->GameMode = GameMode_Playing;
             State->PressedKeys.erase(0x50);
@@ -659,16 +535,16 @@ void ProcessInput(game_state *State)
         {
             // Reset
             State->PressedKeys.erase(0x52);
-            Reset(State);
+            ResetPositions(State);
             State->GameMode = GameMode_Inactive;
-            State->Audio.Play(AudioHandle_Theme);
+            State->Audio.Play(State->Audio_Theme);
         }
         
         if (State->GameMode == GameMode_Playing)
         {
             body *Body[2];
-            Body[0] = GetBody(&State->Dynamics, State->Players[0].BodyIndex);
-            Body[1] = GetBody(&State->Dynamics, State->Players[1].BodyIndex);
+            Body[0] = GetBody(&State->Dynamics, State->Players[0]->BodyIndex);
+            Body[1] = GetBody(&State->Dynamics, State->Players[1]->BodyIndex);
             
             Body[0]->F = v2_zero;
             Body[1]->F = v2_zero;
@@ -704,41 +580,19 @@ void ProcessInput(game_state *State)
 // Misc.
 // 
 
-void Reset(game_state *State)
+void ResetPositions(game_state *State)
 {
     f32 const Width  = (f32)State->DrawCalls.DisplayMetrics.WindowWidth;
     f32 const Height = (f32)State->DrawCalls.DisplayMetrics.WindowHeight;
     
+    v2 P = V2(0.5f * Width, 0.5f * Height);
+    SetP(&State->Dynamics, State->Ball->BodyIndex, P);
     
-    //
-    // Ball
-    body *Body = GetBody(&State->Dynamics, State->Ball.BodyIndex);
-    Body->P = V2(0.5f * Width, 0.5f * Height);
-    Body->PrevP = Body->P;
+    P = V2(1.5f * State->Players[1]->Size.x, 0.5f * Height);
+    SetP(&State->Dynamics, State->Players[0]->BodyIndex, P);
     
-    Body->dP = v2_zero;
-    Body->F = v2_zero;
-    
-    
-    //
-    // Paddles
-    v2 Size = V2(25.0f, 140.0f);
-    v2 Po[2] = 
-    {
-        V2(1.5f * Size.x, 0.5f * Height),
-        V2(Width - 1.5f * Size.x, 0.5f * Height)
-    };
-    
-    for (int Index = 0; Index < 2; ++Index)
-    {
-        Body = GetBody(&State->Dynamics, State->Players[Index].BodyIndex);
-        
-        Body->P = Po[Index];
-        Body->PrevP = Po[Index];
-        
-        Body->dP = v2_zero;
-        Body->F = v2_zero;
-    }
+    P = V2(Width - 1.5f * State->Players[1]->Size.x, 0.5f * Height);
+    SetP(&State->Dynamics, State->Players[1]->BodyIndex, P);
     
     State->PressedKeys.clear();
 }

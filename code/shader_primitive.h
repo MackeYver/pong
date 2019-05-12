@@ -22,46 +22,29 @@
 // SOFTWARE.
 //
 
+#ifndef shader_primitive__h
+#define shader_primitive__h
 
-//
-// Structs
-//
+#include "types.h"
 
-struct vs_input
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D11InputLayout;
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+
+
+
+struct shader_primitive
 {
-    float2 P : Position0;
-    float2 T : TexCoord0;
+    ID3D11VertexShader *VertexProgram = nullptr;
+    ID3D11PixelShader *PixelProgram = nullptr;
+    ID3D11InputLayout *InputLayout = nullptr;
 };
 
-
-struct ps_input
-{	
-    float4 P : SV_Position;
-    float2 T : TexCoord0;
-};
+b32 Init(ID3D11Device *Device, shader_primitive *Shader);
+void Use(shader_primitive *Shader);
+void Shutdown(shader_primitive *Shader);
 
 
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
-
-
-
-
-//
-// Shaders
-//
-
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
-    
-    return Result;
-}
-
-
-float4 pMain(ps_input In) : SV_TARGET
-{
-    return gTexture.Sample(gSampler, In.T);
-}
+#endif

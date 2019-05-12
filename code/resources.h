@@ -36,21 +36,6 @@ struct resources;
 
 
 //
-// Textures
-typedef s32 texture_index;
-typedef s32 bmp_resource_index;
-
-struct bmp_resource
-{
-    bmp Bmp = {};
-    texture_index TextureIndex = -1;
-};
-
-texture_index LoadBMP(resources *Resources, char const *PathAndFileName);
-
-
-
-//
 // Wav
 typedef s32 voice_index;
 typedef s32 wav_resource_index; 
@@ -63,6 +48,23 @@ struct wav_resource
 
 voice_index LoadWAV(resources *Resources, char const *PathAndFileName);
 wav_resource *GetWavResource(resources *Resources, wav_resource_index WavDataIndex);
+
+
+
+
+//
+// Textures
+typedef s32 texture_index;
+typedef s32 bmp_resource_index;
+
+struct bmp_resource
+{
+    bmp Bmp = {};
+    texture_index TextureIndex = -1;
+};
+
+texture_index LoadBMP(resources *Resources, char const *PathAndFileName);
+
 
 
 
@@ -79,6 +81,7 @@ struct mesh_resource
 
 mesh_index LoadPLY(resources *Resources, char const *PathAndFilename);
 mesh_index LoadMesh(resources *Resources, v3 *Positions, v2 *UVs, u32 VertexCount);
+
 
 
 

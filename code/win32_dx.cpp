@@ -24,7 +24,6 @@
 
 #include "win32_dx.h"
 #include "win32_file_io.h"
-#include "resources.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -33,6 +32,7 @@
 #define printf(...)
 #define assert(x)
 #endif
+
 
 
 //
@@ -49,31 +49,21 @@
 //
 
 #define DX_RELEASE(x) State->x ? State->x->Release() : 0
+#define DX_SHUTDOWN(x) Shutdown(&State->x)
+#define DX_FREE(x) Free(&State->x)
 
 void Shutdown(dx_state *State)
 {
-    DX_RELEASE(VertexBufferCircle);
-    DX_RELEASE(VertexBufferRectangle);
-    DX_RELEASE(VertexBufferFullscreen);
-    DX_RELEASE(ShaderConstantsBuffer);
     DX_RELEASE(RasterizerState);
+    DX_RELEASE(BlendState);
     DX_RELEASE(DepthStencilState);
     DX_RELEASE(DepthStencilView);
     DX_RELEASE(DepthStencilTexture);
-    DX_RELEASE(ResolveShaderView);
-    DX_RELEASE(ResolveTexture);
+    DX_FREE(ResolveTexture);
     DX_RELEASE(RenderTargetView);
     DX_RELEASE(RenderTargetTexture);
-    DX_RELEASE(PrimitiveShaderView);
-    DX_RELEASE(PrimitiveTexture);
-    DX_RELEASE(Sampler);
-    DX_RELEASE(psFullscreen);
-    DX_RELEASE(ilFullscreen);
-    DX_RELEASE(vsFullscreen);
-    DX_RELEASE(psBasic);
-    DX_RELEASE(ilBasic);
-    DX_RELEASE(ilBasicSeperated);
-    DX_RELEASE(vsBasic);
+    DX_SHUTDOWN(ShaderPrimitive);
+    DX_SHUTDOWN(ShaderTextured);
     DX_RELEASE(BackbufferView);
     DX_RELEASE(Backbuffer);
     DX_RELEASE(SwapChain);
@@ -112,9 +102,11 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     
+    
     //
     // Create device
     //
+    
     {
         // This flag adds support for surfaces with a color-channel ordering different
         // from the API default. It is required for compatibility with Direct2D.
@@ -154,14 +146,16 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     
-    // @debug ABBA1
+    // @debug
     u32 SampleDescCount = 4; //CheckMultisampleQualityLevels
     u32 SampleDescQuality = 0;
+    
     
     
     //
     // Create SwapChain
     //
+    
     {
         //
         // Fill out a structure describing the SwapChain
@@ -202,6 +196,7 @@ b32 Init(dx_state *State, HWND hWnd)
         {
             printf("Failed to create the swap chain!\n");
             return false;
+            
         }
         
         Factory->Release();
@@ -229,9 +224,11 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     
+    
     //
     // Viewport
     //
+    
     {
         State->Viewport.TopLeftX = 0;
         State->Viewport.TopLeftY = 0;
@@ -266,165 +263,57 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     
+    
     //
     // Shaders
     //
+    
     {
         //
-        // Basic shader (no texture or lighting)
-        
-        // Vertex shader
-        u8 *Data = nullptr;
-        size_t DataSize = 0;
-        win32_ReadFile("build\\shaders\\vbasic.cso", &Data, &DataSize);
-        assert(Data);
-        assert(DataSize > 0);
-        
-        Result = State->Device->CreateVertexShader(Data,
-                                                   DataSize,
-                                                   nullptr,
-                                                   &State->vsBasic);
-        if (FAILED(Result)) {
-            printf("Failed to create vertex shader from file!\n");
+        // Primitive shader
+        b32 bResult = Init(State->Device, &State->ShaderPrimitive);
+        if (!bResult)
+        {
+            printf("%s: failed to create shader program named: shader_primitive.\n", __FILE__);
             return false;
         }
-        
-        // Input layout
-        D3D11_INPUT_ELEMENT_DESC InputElements[] =
-        {
-            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
-        };
-        Result = State->Device->CreateInputLayout(InputElements, 2, Data, DataSize, &State->ilBasic);
-        if (FAILED(Result))
-        {
-            printf("Failed to create input layout!\n");
-            return false;
-        }
-        
-        D3D11_INPUT_ELEMENT_DESC InputElementsSeperated[] =
-        {
-            {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-            {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
-        };
-        Result = State->Device->CreateInputLayout(InputElementsSeperated, 2, Data, DataSize, &State->ilBasicSeperated);
-        if (FAILED(Result))
-        {
-            printf("Failed to create input layout!\n");
-            return false;
-        }
-        
-        
-        if (Data)
-        {
-            free(Data);
-        }
-        
-        // Pixel shader
-        win32_ReadFile("build\\shaders\\pbasic.cso", &Data, &DataSize);
-        assert(Data);
-        assert(DataSize > 0);
-        
-        // Create shader
-        Result = State->Device->CreatePixelShader(Data,
-                                                  DataSize,
-                                                  nullptr,
-                                                  &State->psBasic);
-        if (Data)
-        {
-            free(Data);
-        }
-        
-        if (FAILED(Result)) {
-            printf("Failed to create pixel shader from file!\n");
-            return false;
-        }
-        
         
         
         //
-        // Render a textured quad, fullscreen
-        
-        // vertex shader
-        win32_ReadFile("build\\shaders\\vfullscreen_texture.cso", &Data, &DataSize);
-        assert(Data);
-        assert(DataSize > 0);
-        
-        // Create shader
-        Result = State->Device->CreateVertexShader(Data,
-                                                   DataSize,
-                                                   nullptr,
-                                                   &State->vsFullscreen);
-        if (FAILED(Result)) {
-            printf("Failed to create pixel shader from file!\n");
+        // Textured mesh
+        bResult = Init(State->Device, &State->ShaderTextured);
+        if (!bResult)
+        {
+            printf("%s: failed to create shader program named: shader_textured.\n", __FILE__);
             return false;
         }
         
-        // Input layout
-        Result = State->Device->CreateInputLayout(InputElements, 2, Data, DataSize, &State->ilFullscreen);
-        
-        if (Data)
         {
-            free(Data);
+            f32 w = 1.0f / (0.5f * State->Width);
+            f32 h = 1.0f / (0.5f * State->Height);
+            State->ShaderTextured.Constants.WorldToClip = M4Scale(w, h, 1.0f) * M4Translation(-1.0f, -1.0f, 0.0f);
         }
         
-        // Pixel shader
-        win32_ReadFile("build\\shaders\\pfullscreen_texture.cso", &Data, &DataSize);
-        assert(Data);
-        assert(DataSize > 0);
         
-        // Create shader
-        Result = State->Device->CreatePixelShader(Data,
-                                                  DataSize,
-                                                  nullptr,
-                                                  &State->psFullscreen);
-        if (Data)
+        //
+        // Final render, renders the resolve texture to the screen
+        bResult = Init(State->Device, &State->ShaderFinal);
+        if (!bResult)
         {
-            free(Data);
-            DataSize = 0;
-        }
-        
-        if (FAILED(Result)) {
-            printf("Failed to create pixel shader from file!\n");
+            printf("%s: failed to create shader program named: shader_final.\n", __FILE__);
             return false;
         }
     }
     
-    
-    
-    //
-    // Sampler
-    //
-    {
-        D3D11_SAMPLER_DESC SamplerDesc;
-        SamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-        SamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-        SamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-        SamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        SamplerDesc.MipLODBias = 0.0f;
-        SamplerDesc.MaxAnisotropy = 1;
-        SamplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-        SamplerDesc.BorderColor[0] = 1.0f;
-        SamplerDesc.BorderColor[1] = 0.0f;
-        SamplerDesc.BorderColor[2] = 1.0f;
-        SamplerDesc.BorderColor[3] = 1.0f;
-        SamplerDesc.MinLOD = 0.0f;
-        SamplerDesc.MaxLOD = 0.0f;
-        
-        Result = State->Device->CreateSamplerState(&SamplerDesc, &State->Sampler);
-        if (FAILED(Result))
-        {
-            printf("Failed to create sampler!\n");
-            return false;
-        }
-    }
     
     
     
     //
     // Render target, a texture that we will render to, which will be resolved into ResolveTexture, which in turn
     // will be rendered on a fullscreen quad to the Backbuffer (final render target).
+    // This is MSAA enabled (the resolve texture is not).
     //
+    
     {
         //
         // Texture
@@ -468,9 +357,11 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     
+    
     //
     // Depth-/stencil-stuff
     //
+    
     {
         //
         // Create the texture for the depth-/stencil-buffer
@@ -546,320 +437,55 @@ b32 Init(dx_state *State, HWND hWnd)
     
     
     //
+    // Blend state
+    //
+    
+    {
+        // color = alpha * src + (1 - alpha) * dest
+        D3D11_RENDER_TARGET_BLEND_DESC RenderTargetBlendDesc;
+        ZeroMemory(&RenderTargetBlendDesc, sizeof(D3D11_RENDER_TARGET_BLEND_DESC));
+        RenderTargetBlendDesc.BlendEnable = true;
+        RenderTargetBlendDesc.SrcBlend = D3D11_BLEND_SRC_ALPHA;
+        RenderTargetBlendDesc.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        RenderTargetBlendDesc.BlendOp = D3D11_BLEND_OP_ADD;
+        RenderTargetBlendDesc.SrcBlendAlpha = D3D11_BLEND_ONE;
+        RenderTargetBlendDesc.DestBlendAlpha = D3D11_BLEND_ONE;
+        RenderTargetBlendDesc.BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        RenderTargetBlendDesc.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+        
+        D3D11_BLEND_DESC BlendDesc;
+        ZeroMemory(&BlendDesc, sizeof(D3D11_BLEND_DESC));
+        BlendDesc.AlphaToCoverageEnable = false;
+        BlendDesc.IndependentBlendEnable = false;
+        BlendDesc.RenderTarget[0] = RenderTargetBlendDesc;
+        
+        
+        Result = State->Device->CreateBlendState(&BlendDesc, &State->BlendState);
+        if (FAILED(Result)) 
+        {
+            printf("Failed to create the blend state!\n");
+            return false;
+        }
+    }
+    
+    
+    
+    
+    //
     // Rensolve target, a texture that we will be the result of a MSAA resolve from RenderTargetTexture
     // This will be rendered on a fullscreen quad to the Backbuffer (final render target).
+    // NOT MSAA.
     //
+    
     {
-        //
-        // Texture
-        D3D11_TEXTURE2D_DESC TexDesc;
-        ZeroMemory(&TexDesc, sizeof(D3D11_TEXTURE2D_DESC));
-        
-        TexDesc.Width = State->Width;
-        TexDesc.Height = State->Height;
-        TexDesc.MipLevels = 1;
-        TexDesc.ArraySize = 1;
-        TexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-        TexDesc.SampleDesc.Count = 1;
-        TexDesc.SampleDesc.Quality = 0;
-        TexDesc.Usage = D3D11_USAGE_DEFAULT;
-        TexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        TexDesc.CPUAccessFlags = 0;
-        TexDesc.MiscFlags = 0;
-        
-        Result = State->Device->CreateTexture2D(&TexDesc, nullptr, &State->ResolveTexture);
-        if (FAILED(Result)) 
+        b32 bResult = CreateTexture(State->Device, State->Width, State->Height, &State->ResolveTexture);
+        if (!bResult) 
         {
-            printf("Failed to create the resolve texture.\n");
-            return false;
-        }
-        
-        
-        //
-        // Shader view
-        D3D11_SHADER_RESOURCE_VIEW_DESC ShaderViewDesc;
-        ShaderViewDesc.Format = TexDesc.Format;
-        ShaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        ShaderViewDesc.Texture2D.MostDetailedMip = 0;
-        ShaderViewDesc.Texture2D.MipLevels = 1;
-        
-        Result = State->Device->CreateShaderResourceView(State->ResolveTexture, 
-                                                         &ShaderViewDesc, 
-                                                         &State->ResolveShaderView);
-        if (FAILED(Result)) 
-        {
-            printf("Failed to create the shader view for the resolve texture.\n");
+            printf("%s: Failed to create the resolve texture.\n", __FILE__);
             return false;
         }
     }
     
-    
-    
-    //
-    // 1x1 white texture. Used so that we may reduce the number of shaders used. If we want to render a 
-    // non-textured primitive, we will actually render it textured, but the texture will be white and
-    // multiplied with the wanted colour.
-    //
-    {
-        //
-        // Texture
-        D3D11_TEXTURE2D_DESC TexDesc;
-        ZeroMemory(&TexDesc, sizeof(D3D11_TEXTURE2D_DESC));
-        
-        TexDesc.Width = 1;
-        TexDesc.Height = 1;
-        TexDesc.MipLevels = 1;
-        TexDesc.ArraySize = 1;
-        TexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-        TexDesc.SampleDesc.Count = 1;
-        TexDesc.SampleDesc.Quality = 0;
-        TexDesc.Usage = D3D11_USAGE_DEFAULT;
-        TexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        TexDesc.CPUAccessFlags = 0;
-        TexDesc.MiscFlags = 0;
-        
-        u32 Data = 0xFFFFFFFF;
-        
-        D3D11_SUBRESOURCE_DATA InitData;
-        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = &Data;
-        InitData.SysMemPitch = sizeof(v4);
-        InitData.SysMemSlicePitch = 0;
-        
-        Result = State->Device->CreateTexture2D(&TexDesc, &InitData, &State->PrimitiveTexture);
-        if (FAILED(Result)) 
-        {
-            printf("Failed to create the 1x1 primitive texture.\n");
-            return false;
-        }
-        
-        
-        //
-        // Shader view
-        D3D11_SHADER_RESOURCE_VIEW_DESC ShaderViewDesc;
-        ShaderViewDesc.Format = TexDesc.Format;
-        ShaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        ShaderViewDesc.Texture2D.MostDetailedMip = 0;
-        ShaderViewDesc.Texture2D.MipLevels = 1;
-        
-        Result = State->Device->CreateShaderResourceView(State->PrimitiveTexture, 
-                                                         &ShaderViewDesc, 
-                                                         &State->PrimitiveShaderView);
-        if (FAILED(Result)) 
-        {
-            printf("Failed to create the shader view for the 1x1 primitive texture.\n");
-            return false;
-        }
-    }
-    
-    
-    
-    //
-    // Constant buffer
-    //
-    {
-        f32 w = 1.0f / (0.5f * State->Width);
-        f32 h = 1.0f / (0.5f * State->Height);
-        State->ShaderConstants.WorldToClip = M4Scale(w, h, 1.0f) * M4Translation(-1.0f, -1.0f, 0.0f);
-        State->ShaderConstants.Colour = V4(0.65f, 0.65f, 0.7f, 1.0f);
-        assert(sizeof(shader_constants) % 16 == 0);
-        
-        D3D11_BUFFER_DESC BufferDesc;
-        ZeroMemory(&BufferDesc, sizeof(D3D11_BUFFER_DESC));
-        BufferDesc.ByteWidth = sizeof(State->ShaderConstants);             
-        BufferDesc.Usage = D3D11_USAGE_DYNAMIC;  // only usable by the GPU
-        BufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;       
-        BufferDesc.MiscFlags = 0;                // No other option
-        BufferDesc.StructureByteStride = 0;
-        
-        D3D11_SUBRESOURCE_DATA InitData;
-        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = &State->ShaderConstants;
-        InitData.SysMemPitch = 0;
-        InitData.SysMemSlicePitch = 0;
-        
-        Result = State->Device->CreateBuffer(&BufferDesc, &InitData, &State->ShaderConstantsBuffer);
-        if (FAILED(Result)) 
-        {
-            printf("Failed to create the buffer\n");
-            return false;
-        }
-    }
-    
-    
-    
-    //
-    // Fullscreen quad, used to render the RenderTargetTexture to the screen
-    //
-    {
-        struct pt
-        {
-            v3 P;
-            v2 T;
-        };
-        
-        pt Vertices[] =
-        {
-            {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
-            {{ 1.0f,  1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f}},
-            
-            {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
-            {{ 1.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
-            {{ 1.0f,  1.0f, 0.0f}, {1.0f, 0.0f}},
-        };
-        
-        u32 VertexCount = 6;
-        size_t VertexSize = sizeof(pt);
-        size_t Size = VertexCount * VertexSize;
-        
-        D3D11_BUFFER_DESC BufferDesc;
-        ZeroMemory(&BufferDesc, sizeof(D3D11_BUFFER_DESC));
-        BufferDesc.ByteWidth = Size;                     // size of the buffer
-        BufferDesc.Usage = D3D11_USAGE_IMMUTABLE;        // This buffer will never change
-        BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER; // use in vertex shader
-        BufferDesc.CPUAccessFlags = 0;                   // No CPU access to the buffer
-        BufferDesc.MiscFlags = 0;                        // No other option
-        BufferDesc.StructureByteStride = VertexSize;
-        
-        D3D11_SUBRESOURCE_DATA InitData;
-        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = Vertices;
-        InitData.SysMemPitch = 0;
-        InitData.SysMemSlicePitch = 0;
-        
-        Result = State->Device->CreateBuffer(&BufferDesc, &InitData, &State->VertexBufferFullscreen);
-        if (FAILED(Result)) 
-        {
-            printf("Failed to create the VertexbufferFullscreen\n");
-            return false;
-        }
-    }
-    
-    
-    
-    //
-    // Vertex buffer for a 1x1 rectangle
-    // - @debug
-    {
-        struct pt
-        {
-            v3 P;
-            v2 T;
-        };
-        
-        pt Vertices[] =
-        {
-            {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},
-            {{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f}},
-            {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f}},
-            
-            {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},
-            {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}},
-            {{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f}},
-        };
-        
-        u32 VertexCount = 6;
-        size_t VertexSize = sizeof(pt);
-        size_t Size = VertexCount * VertexSize;
-        
-        D3D11_BUFFER_DESC BufferDesc;
-        ZeroMemory(&BufferDesc, sizeof(D3D11_BUFFER_DESC));
-        BufferDesc.ByteWidth = Size;                     // size of the buffer
-        BufferDesc.Usage = D3D11_USAGE_IMMUTABLE;        // This buffer will never change
-        BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER; // use in vertex shader
-        BufferDesc.CPUAccessFlags = 0;                   // No CPU access to the buffer
-        BufferDesc.MiscFlags = 0;                        // No other option
-        BufferDesc.StructureByteStride = VertexSize;
-        
-        D3D11_SUBRESOURCE_DATA InitData;
-        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = Vertices;
-        InitData.SysMemPitch = 0;
-        InitData.SysMemSlicePitch = 0;
-        
-        Result = State->Device->CreateBuffer(&BufferDesc, &InitData, &State->VertexBufferRectangle);
-        if (FAILED(Result)) 
-        {
-            printf("Failed to create the VertexbufferRectangle!\n");
-            return false;
-        }
-    }
-    
-    
-    
-    //
-    // Vertex buffer for a circle
-    // - @debug, inefficient!
-    {
-        struct pt
-        {
-            v3 P;
-            v2 T;
-        };
-        
-        u32 SliceCount = 32;
-        u32 VertexCount = 3 * SliceCount;
-        size_t VertexSize = sizeof(pt);
-        size_t Size = VertexCount * VertexSize;
-        
-        pt* Vertices = static_cast<pt *>(malloc(Size));
-        assert(Vertices);
-        
-        f32 Theta = Tau32 / (f32)SliceCount;
-        f32 CurrAngle = 0.0f;
-        u32 VertexIndex = 0;
-        for (u32 Index = 0; Index < SliceCount; ++Index)
-        {
-            Vertices[VertexIndex++] = {{0.0f, 0.0f, 0.0f}, {0.5f, 0.5f}};
-            
-            f32 x = Cos(CurrAngle);
-            f32 y = Sin(CurrAngle);
-            Vertices[VertexIndex++] = {{x, y, 0.0f}, {(x + 1.0f) / 2.0f, (1.0f - y) / 2.0f}};
-            
-            CurrAngle += Theta;
-            
-            x = Cos(CurrAngle);
-            y = Sin(CurrAngle);
-            Vertices[VertexIndex++] = {{x, y, 0.0f}, {(x + 1.0f) / 2.0f, (1.0f - y) / 2.0f}};
-        }
-        assert(VertexIndex == VertexCount);
-        
-        D3D11_BUFFER_DESC BufferDesc;
-        ZeroMemory(&BufferDesc, sizeof(D3D11_BUFFER_DESC));
-        BufferDesc.ByteWidth = Size;                     // size of the buffer
-        BufferDesc.Usage = D3D11_USAGE_IMMUTABLE;        // This buffer will never change
-        BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER; // use in vertex shader
-        BufferDesc.CPUAccessFlags = 0;                   // No CPU access to the buffer
-        BufferDesc.MiscFlags = 0;                        // No other option
-        BufferDesc.StructureByteStride = VertexSize;
-        
-        D3D11_SUBRESOURCE_DATA InitData;
-        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = Vertices;
-        InitData.SysMemPitch = 0;
-        InitData.SysMemSlicePitch = 0;
-        
-        Result = State->Device->CreateBuffer(&BufferDesc, &InitData, &State->VertexBufferCircle);
-        if (FAILED(Result)) 
-        {
-            if (Vertices)
-            {
-                free(Vertices);
-            }
-            
-            printf("Failed to create the VertexbufferRectangle!\n");
-            return false;
-        }
-        
-        if (Vertices)
-        {
-            free(Vertices);
-        }
-        
-        State->VertexCountCircle = VertexCount;
-    }
     
     
     
@@ -882,17 +508,6 @@ b32 Init(dx_state *State, HWND hWnd)
 }
 
 
-void UpdateConstantBuffer(dx_state *State, shader_constants *ShaderConstants)
-{
-    D3D11_MAPPED_SUBRESOURCE MappedResource;
-    ZeroMemory(&MappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-    
-    State->DeviceContext->Map(State->ShaderConstantsBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-    memcpy(MappedResource.pData, ShaderConstants, sizeof(shader_constants));
-    State->DeviceContext->Unmap(State->ShaderConstantsBuffer, 0);
-}
-
-
 
 
 //
@@ -908,6 +523,10 @@ void BeginRendering(dx_state *State)
     ID3D11DeviceContext *DC = State->DeviceContext;
     
     //
+    // Blending
+    DC->OMSetBlendState(State->BlendState, nullptr, 0xFFFFFFFF);
+    
+    //
     // Clear the depth-/stencil-view and the texture used as render target
     DC->ClearDepthStencilView(State->DepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
     DC->ClearRenderTargetView(State->RenderTargetView, (f32 *)&State->BackgroundColour);
@@ -918,17 +537,8 @@ void BeginRendering(dx_state *State)
     DC->OMSetRenderTargets(1, &State->RenderTargetView, State->DepthStencilView);
     
     //
-    // Set shaders
-    DC->VSSetShader(State->vsBasic, nullptr, 0);
-    DC->PSSetShader(State->psBasic, nullptr, 0);
-    
-    //
-    // Set resources
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
-    State->DeviceContext->PSSetSamplers(0, 1, &State->Sampler);
-    
-    DC->VSSetConstantBuffers(0, 1, &State->ShaderConstantsBuffer);
-    DC->PSSetConstantBuffers(0, 1, &State->ShaderConstantsBuffer);
+    // We only have one "effect"... Let's use that!
+    Use(DC, &State->ShaderTextured);
 }
 
 
@@ -944,35 +554,29 @@ void EndRendering(dx_state *State)
     
     //
     // Resolve
-    DC->ResolveSubresource(State->ResolveTexture, 0,
+    DC->ResolveSubresource(State->ResolveTexture.Texture, 0,
                            State->RenderTargetTexture, 0,
                            DXGI_FORMAT_B8G8R8A8_UNORM);
     
-    
     //
-    // Render the resolved texture
-    DC->IASetInputLayout(State->ilFullscreen);
+    // No blending
+    DC->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+    
     
     //
     // Set the backbuffer (in the swap chain) as the render target
     State->DeviceContext->OMSetDepthStencilState(nullptr, 1);
     State->DeviceContext->OMSetRenderTargets(1, &State->BackbufferView, nullptr);
     
-    //
-    // Set shaders
-    DC->VSSetShader(State->vsFullscreen, nullptr, 0);
-    DC->PSSetShader(State->psFullscreen, nullptr, 0);
-    
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->ResolveShaderView);
-    State->DeviceContext->PSSetSamplers(0, 1, &State->Sampler);
     
     //
-    // Render the fullscreen quad with the RenderTargetTexture as texture
-    size_t Stride = sizeof(v3) + sizeof(v2);
-    size_t Offset = 0;
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferFullscreen, &Stride, &Offset);
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    DC->Draw(6, 0);
+    // Use the shader that will render a texture to the screen
+    Use(DC, &State->ShaderFinal);
+    
+    //
+    // Draw
+    //DrawTextureToScreen(DC, &State->ShadarFinal, ResolveTexture);
+    DrawTextureToScreen(DC, &State->ShaderFinal, &State->ResolveTexture);
     
     //
     // Update
@@ -984,120 +588,25 @@ void EndRendering(dx_state *State)
 
 //
 // Draw calls
-// - We issue a DirectX draw call per primitive for now.
-// - TODO: Batch!
 //
 
-void RenderFilledRectangle(dx_state *State, v2 Po, v2 Size, v4 Colour)
+void RenderTexturedMesh(dx_state *State, m4 ObjectToWorld, s32 MeshIndex, s32 TextureIndex, v4 Colour)
 {
-    State->ShaderConstants.Colour = Colour;
-    State->ShaderConstants.ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
-    UpdateConstantBuffer(State, &State->ShaderConstants);
-    
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    size_t Stride = sizeof(v3) + sizeof(v2);
-    size_t Offset = 0;
+    //
+    // Set up constants
+    State->ShaderTextured.Constants.Colour = Colour;
+    State->ShaderTextured.Constants.ObjectToWorld = ObjectToWorld;
+    UpdateConstants(DC, &State->ShaderTextured);
     
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset);
-    DC->IASetInputLayout(State->ilBasic);
-    DC->Draw(6, 0);
-}
-
-
-void RenderTexturedRectangle(dx_state *State, v2 Po, v2 Size, texture_index Index, v4 Colour)
-{
-    assert((Index >= 0) && ((u32)Index < State->Textures.size()));
-    
-    State->ShaderConstants.Colour = Colour;
-    State->ShaderConstants.ObjectToWorld = M4Scale(Size.x, Size.y, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
-    UpdateConstantBuffer(State, &State->ShaderConstants);
-    
-    ID3D11DeviceContext *DC = State->DeviceContext;
-    
-    size_t Stride = sizeof(v3) + sizeof(v2);
-    size_t Offset = 0;
-    
-    dx_texture *Texture = &State->Textures[Index];
-    State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
-    
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferRectangle, &Stride, &Offset);
-    DC->IASetInputLayout(State->ilBasic);
-    DC->Draw(6, 0);
-    
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
-}
-
-
-void RenderFilledCircle(dx_state *State, v2 Po, f32 Radius, v4 Colour)
-{
-    State->ShaderConstants.Colour = Colour;
-    State->ShaderConstants.ObjectToWorld = M4Scale(Radius, Radius, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
-    UpdateConstantBuffer(State, &State->ShaderConstants);
-    
-    ID3D11DeviceContext *DC = State->DeviceContext;
-    
-    size_t Stride = sizeof(v3) + sizeof(v2);
-    size_t Offset = 0;
-    
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferCircle, &Stride, &Offset); 
-    DC->IASetInputLayout(State->ilBasic);
-    DC->Draw(State->VertexCountCircle, 0);
-}
-
-
-void RenderTexturedCircle(dx_state *State, v2 Po, f32 Radius, texture_index Index, v4 Colour)
-{
-    State->ShaderConstants.Colour = Colour;
-    State->ShaderConstants.ObjectToWorld = M4Scale(Radius, Radius, 1.0f) * M4Translation(Po.x, Po.y, 0.0f);
-    UpdateConstantBuffer(State, &State->ShaderConstants);
-    
-    ID3D11DeviceContext *DC = State->DeviceContext;
-    
-    size_t Stride = sizeof(v3) + sizeof(v2);
-    size_t Offset = 0;
-    
-    dx_texture *Texture = &State->Textures[Index];
-    State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
-    
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->IASetVertexBuffers(0, 1, &State->VertexBufferCircle, &Stride, &Offset);
-    DC->IASetInputLayout(State->ilBasic);
-    DC->Draw(State->VertexCountCircle, 0);
-    
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
-}
-
-
-void RenderTexturedMesh(dx_state *State, m4 ObjectToWorld, mesh_index MeshIndex, texture_index TextureIndex, v4 Colour)
-{
-    State->ShaderConstants.Colour = Colour;
-    State->ShaderConstants.ObjectToWorld = ObjectToWorld;
-    UpdateConstantBuffer(State, &State->ShaderConstants);
-    
-    ID3D11DeviceContext *DC = State->DeviceContext;
-    
-    dx_texture *Texture = &State->Textures[TextureIndex];
-    State->DeviceContext->PSSetShaderResources(0, 1, &Texture->ShaderView);
-    
+    //
+    // Draw
     dx_mesh *Mesh = &State->Meshes[MeshIndex];
-    
-    size_t Stride = sizeof(v3);
-    size_t Offset = 0;
-    DC->IASetVertexBuffers(0, 1, &Mesh->Positions, &Stride, &Offset); 
-    
-    Stride = sizeof(v2);
-    DC->IASetVertexBuffers(1, 1, &Mesh->UVs, &Stride, &Offset); 
-    
-    DC->IASetInputLayout(State->ilBasicSeperated);
-    DC->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // @debug
-    DC->Draw(Mesh->VertexCount, 0);
-    
-    State->DeviceContext->PSSetShaderResources(0, 1, &State->PrimitiveShaderView);
+    dx_texture *Texture = &State->Textures[TextureIndex];
+    DrawMesh(DC, &State->ShaderTextured, Mesh, Texture);
 }
+
 
 
 
@@ -1109,26 +618,14 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
 {
     BeginRendering(State);
     
-    for (u8 *CurrAddress = DrawCalls->Memory;
-         CurrAddress < (DrawCalls->Memory + DrawCalls->MemoryUsed);
+    for (u8 *CurrAddress = DrawCalls->Memory.Ptr;
+         CurrAddress < (DrawCalls->Memory.Ptr + DrawCalls->Memory.Used);
          )
     {
         draw_call_header *Header = reinterpret_cast<draw_call_header *>(CurrAddress);
         
         switch (Header->Type)
         {
-            case DrawCallType_FilledRectangle:
-            {
-                draw_call_filled_rectangle *DrawCall = reinterpret_cast<draw_call_filled_rectangle *>(CurrAddress);
-                RenderFilledRectangle(State, DrawCall->P, DrawCall->Size, DrawCall->Colour);
-            } break;
-            
-            case DrawCallType_FilledCircle:
-            {
-                draw_call_filled_circle *DrawCall = reinterpret_cast<draw_call_filled_circle *>(CurrAddress);;
-                RenderFilledCircle(State, DrawCall->P, DrawCall->Radius, DrawCall->Colour);
-            } break;
-            
             case DrawCallType_Text:
             {
                 draw_call_text *DrawCall = reinterpret_cast<draw_call_text *>(CurrAddress);
@@ -1137,18 +634,6 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
                 BeginDraw(&State->DWState);
                 DrawText(&State->DWState, DrawCall->P, DrawCall->Text);
                 EndDraw(&State->DWState);
-            } break;
-            
-            case DrawCallType_TexturedRectangle:
-            {
-                draw_call_textured_rectangle *DrawCall = reinterpret_cast<draw_call_textured_rectangle *>(CurrAddress);
-                RenderTexturedRectangle(State, DrawCall->P, DrawCall->Size, DrawCall->TextureIndex, DrawCall->Colour);
-            } break;
-            
-            case DrawCallType_TexturedCircle:
-            {
-                draw_call_textured_circle *DrawCall = reinterpret_cast<draw_call_textured_circle *>(CurrAddress);;
-                RenderTexturedCircle(State, DrawCall->P, DrawCall->Radius, DrawCall->TextureIndex, DrawCall->Colour);
             } break;
             
             case DrawCallType_TexturedMesh:
@@ -1166,210 +651,7 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
         CurrAddress += Header->Size;
     }
     
-    ClearMemory(DrawCalls);
+    Clear(&DrawCalls->Memory);
     
     EndRendering(State);
-}
-
-
-
-
-//
-// Texture handling
-//
-
-texture_index CreateTexture(void *DXState, bmp *BMP)
-{
-    dx_state *State = reinterpret_cast<dx_state *>(DXState); // CRAZY!
-    texture_index Result = -1;
-    
-    if (BMP)
-    {
-        dx_texture T;
-        
-        //
-        // Texture
-        D3D11_TEXTURE2D_DESC TexDesc;
-        ZeroMemory(&TexDesc, sizeof(D3D11_TEXTURE2D_DESC));
-        
-        TexDesc.Width = BMP->Header.Width;
-        TexDesc.Height = BMP->Header.Height;
-        TexDesc.MipLevels = 1;
-        TexDesc.ArraySize = 1;
-        TexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; // @debug
-        TexDesc.SampleDesc.Count = 1;
-        TexDesc.SampleDesc.Quality = 0;
-        TexDesc.Usage = D3D11_USAGE_DEFAULT;
-        TexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        TexDesc.CPUAccessFlags = 0;
-        TexDesc.MiscFlags = 0;
-        
-        D3D11_SUBRESOURCE_DATA InitData;
-        ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-        InitData.pSysMem = BMP->Data;
-        InitData.SysMemPitch = BMP->RowSize;
-        InitData.SysMemSlicePitch = 0;
-        
-        HRESULT HResult = State->Device->CreateTexture2D(&TexDesc, &InitData, &T.Texture);
-        if (FAILED(HResult)) 
-        {
-            printf("Failed to create the texture.\n");
-            return false;
-        }
-        
-        
-        //
-        // Shader view
-        D3D11_SHADER_RESOURCE_VIEW_DESC ShaderViewDesc;
-        ShaderViewDesc.Format = TexDesc.Format;
-        ShaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        ShaderViewDesc.Texture2D.MostDetailedMip = 0;
-        ShaderViewDesc.Texture2D.MipLevels = 1;
-        
-        HResult = State->Device->CreateShaderResourceView(T.Texture, 
-                                                          &ShaderViewDesc, 
-                                                          &T.ShaderView);
-        if (FAILED(HResult)) 
-        {
-            printf("Failed to create the shader view.\n");
-            return false;
-        }
-        
-        State->Textures.push_back(T);
-        Result = State->Textures.size() - 1;
-    }
-    
-    return Result;
-}
-
-
-void Free(dx_texture *Texture)
-{
-    if (Texture)
-    {
-        Texture->ShaderView ? Texture->ShaderView->Release() : 0;
-        Texture->Texture ? Texture->Texture->Release() : 0;
-    }
-}
-
-
-
-
-//
-// Meshes
-//
-
-b32 CreateBuffer(dx_state *State, void *Data, size_t DataSize, size_t ElementSize, ID3D11Buffer **Output)
-{
-    b32 Result = true;
-    
-    D3D11_BUFFER_DESC BufferDesc;
-    ZeroMemory(&BufferDesc, sizeof(D3D11_BUFFER_DESC));
-    
-    BufferDesc.ByteWidth = DataSize;                 // size of the buffer
-    BufferDesc.Usage = D3D11_USAGE_IMMUTABLE;        // This buffer will never change
-    BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER; // use in vertex shader
-    BufferDesc.CPUAccessFlags = 0;                   // No CPU access to the buffer
-    BufferDesc.MiscFlags = 0;                        // No other option
-    BufferDesc.StructureByteStride = ElementSize;
-    
-    D3D11_SUBRESOURCE_DATA InitData;
-    ZeroMemory(&InitData, sizeof(D3D11_SUBRESOURCE_DATA));
-    
-    InitData.pSysMem = Data;
-    InitData.SysMemPitch = 0;
-    InitData.SysMemSlicePitch = 0;
-    
-    HRESULT HResult = State->Device->CreateBuffer(&BufferDesc, &InitData, Output);
-    if (FAILED(HResult)) 
-    {
-        Result = false;
-    }
-    
-    return Result;
-}
-
-mesh_index CreateMesh(void *DXState, mesh *Mesh)
-{
-    dx_state *State = reinterpret_cast<dx_state *>(DXState); // CRAZY!
-    mesh_index Result = -10;
-    
-    if (Mesh)
-    {
-        dx_mesh DXMesh;
-        
-        // TODO(Marcus): We're assuming that it is triangles, but we don't know. Fix this!
-        DXMesh.Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-        
-        assert(Mesh->Positions);
-        size_t Size = sizeof(v3) * Mesh->VertexCount;
-        if (!CreateBuffer(State, Mesh->Positions, Size, sizeof(v3), &DXMesh.Positions))
-        {
-            printf("Failed to create the buffer with the positions!\n");
-            Result = -1;
-        }
-        else
-        {
-            DXMesh.VertexCount = Mesh->VertexCount;
-        }
-        
-        if (Mesh->Normals && Result != -1)
-        {
-            Size = sizeof(v3) * Mesh->VertexCount;
-            if (!CreateBuffer(State, Mesh->Normals, Size, sizeof(v3), &DXMesh.Normals))
-            {
-                printf("Failed to create the buffer with the normals!\n");
-                Result = -1;
-            }
-        }
-        
-        if (Mesh->UVs && Result != -1)
-        {
-            Size = sizeof(v2) * Mesh->VertexCount;
-            if (!CreateBuffer(State, Mesh->UVs, Size, sizeof(v2), &DXMesh.UVs))
-            {
-                printf("Failed to create the buffer with the texture coordinates!\n");
-                Result = -1;
-            }
-        }
-        
-        if (Mesh->Indices && Result != -1)
-        {
-            Size = sizeof(u16) * Mesh->IndexCount;
-            if (!CreateBuffer(State, Mesh->Indices, Size, sizeof(u16), &DXMesh.Indices))
-            {
-                printf("Failed to create the buffer with the indices!\n");
-                Result = -1;
-            }
-            DXMesh.IndexCount = Mesh->IndexCount;
-        }
-        
-        if (Result != 1)
-        {
-            State->Meshes.push_back(DXMesh);
-            Result = State->Meshes.size() - 1;
-        }
-    }
-    
-    return Result;
-}
-
-
-void Free(dx_mesh *Mesh)
-{
-    if (Mesh)
-    {
-        Mesh->Positions ? Mesh->Positions->Release() : 0;
-        Mesh->Normals   ? Mesh->Normals->Release()   : 0;
-        Mesh->UVs       ? Mesh->UVs->Release()       : 0;
-        Mesh->Indices   ? Mesh->Indices->Release()   : 0;
-        
-        Mesh->Positions = nullptr;
-        Mesh->Normals = nullptr;
-        Mesh->UVs = nullptr;
-        Mesh->Indices = nullptr;
-        
-        Mesh->VertexCount = 0;
-        Mesh->IndexCount = 0;
-    }
 }

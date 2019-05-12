@@ -22,10 +22,52 @@
 // SOFTWARE.
 //
 
+#ifndef shader_textured__h
+#define shader_textured__h
 
-cbuffer ConstantBuffer : register(b0)
+#include "mathematics.h"
+#include "win32_dx_buffer.h"
+
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D11InputLayout;
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+struct dx_mesh;
+struct dx_texture;
+
+
+struct textured_shader_constants
 {
-    float4x4 WorldToClip;
-    float4x4 ObjectToWorld;
-    float4 Colour;
+    m4 ObjectToWorld;
+    m4 WorldToClip;
+    v4 Colour;
 };
+
+
+struct shader_textured
+{
+    struct vs_input // Input to the vertex shaders
+    {
+        v3 P;
+        v2 T;
+    };
+    
+    ID3D11VertexShader *VertexProgram = nullptr;
+    ID3D11PixelShader *PixelProgram = nullptr;
+    ID3D11InputLayout *InputLayout = nullptr;
+    ID3D11SamplerState *Sampler = nullptr;
+    
+    dx_buffer ConstantsBuffer;
+    textured_shader_constants Constants;
+};
+
+
+b32 Init(ID3D11Device *Device, shader_textured *Shader);
+void Shutdown(shader_textured *Shader);
+
+void Use(ID3D11DeviceContext *DC, shader_textured *Shader);
+void UpdateConstants(ID3D11DeviceContext *DeviceContext, shader_textured *Shader);
+void DrawMesh(ID3D11DeviceContext *DC, shader_textured *Shader, dx_mesh *Mesh, dx_texture *Texture);
+
+#endif

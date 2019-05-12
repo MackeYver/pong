@@ -22,50 +22,23 @@
 // SOFTWARE.
 //
 
-#include "common.h"
+#ifndef win32_dx_texture__h
+#define win32_dx_texture__h
+
+#include <d3d11.h>
+#include "types.h"
+struct bmp;
 
 
-
-struct vs_input
+struct dx_texture
 {
-    float3 P : POSITION0;
-    float2 T : TEXCOORD0;
+    ID3D11Texture2D *Texture = nullptr;
+    ID3D11ShaderResourceView *ShaderView = nullptr;
 };
 
-struct ps_input
-{
-    float4 P : SV_Position;
-    float2 T : TEXCOORD0;
-};
+b32 CreateTexture(ID3D11Device *Device, u32 Width, u32 Height, dx_texture *Output);
+s32 CreateTexture(void *DXState, bmp *BMP);
+void Free(dx_texture *Texture);
 
 
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
-
-
-//
-// Vertex shader
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    float4x4 ObjectToClip = mul(ObjectToWorld, WorldToClip);
-    Result.P = mul(float4(In.P, 1.0f), ObjectToClip);
-    Result.T = In.T;
-    
-    return Result;
-}
-
-
-//
-// Pixel shader
-float4 pMain(ps_input In) : SV_Target
-{
-#if 1
-    float4 TextureColour = gTexture.Sample(gSampler, In.T);
-    float4 Result = TextureColour * Colour;
-    
-    return Result;
-#else
-    return float4(In.T.x, In.T.y, 0.0f, 1.0f);
 #endif
-}

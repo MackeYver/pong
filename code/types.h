@@ -30,9 +30,12 @@
 
 #define ArrayCount(A) sizeof(A) / sizeof(*A)
 
+
+
 //
 // Typedefs
 //
+
 typedef uint8_t  u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -53,9 +56,12 @@ typedef u32 b32;
 
 
 
+
+
 //
 // string
 //
+
 struct string
 {
     uintptr_t Count;
@@ -140,6 +146,7 @@ static b32 StringsAreEqual(string A, char *B)
     
     return true;
 }
+
 
 
 #endif

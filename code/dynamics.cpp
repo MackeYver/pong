@@ -99,7 +99,7 @@ void Update(dynamics_state *State, f32 dt)
 }
 
 
-body_index NewRectangleBody(dynamics_state *State, v2 Size, void *UserData)
+body *NewRectangleBody(dynamics_state *State, v2 Size, void *UserData)
 {
     assert(State);
     
@@ -112,11 +112,11 @@ body_index NewRectangleBody(dynamics_state *State, v2 Size, void *UserData)
     Result->Shape.BodyIndex = Index;
     Result->UserData = UserData;
     
-    return Index;
+    return Result;
 }
 
 
-body_index NewCircleBody(dynamics_state *State, f32 Radius, void *UserData)
+body *NewCircleBody(dynamics_state *State, f32 Radius, void *UserData)
 {
     assert(State);
     
@@ -129,13 +129,52 @@ body_index NewCircleBody(dynamics_state *State, f32 Radius, void *UserData)
     Result->Shape.BodyIndex = Index;
     Result->UserData = UserData;
     
-    return Index;
+    return Result;
 }
 
 
 body *GetBody(dynamics_state *State, body_index BodyIndex)
 {
     return &State->Bodies[BodyIndex];
+}
+
+
+body_index GetBodyIndex(dynamics_state *State, body *Body)
+{
+    body_index Result = -1;
+    
+    if (State && Body)
+    {
+        if (Body->Shape.BodyIndex >= 0)
+        {
+            Result = Body->Shape.BodyIndex;
+        }
+        else
+        {
+            for (std::vector<body>::size_type Index = 0; Index < State->Bodies.size(); ++Index)
+            {
+                if (&State->Bodies[Index] == Body)
+                {
+                    Result = Index;
+                    Body->Shape.BodyIndex = Index;
+                    break;
+                }
+            }
+        }
+    }
+    
+    return Result;
+}
+
+
+void SetP(dynamics_state *State, body_index BodyIndex, v2 Po)
+{
+    body *Body = GetBody(State, BodyIndex);
+    Body->P = Po;
+    Body->PrevP = Body->P;
+    
+    Body->dP = v2_zero;
+    Body->F = v2_zero;
 }
 
 

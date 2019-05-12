@@ -744,6 +744,11 @@ inline m4 M4Scale(f32 const Sx, f32 const Sy, f32 const Sz)
     return Result;
 }
 
+inline m4 M4Scale(v3 const Scale)
+{
+    return M4Scale(Scale.x, Scale.y, Scale.z);
+}
+
 
 inline m4 M4Translate(f32 const dx, f32 const dy, f32 const dz)
 {

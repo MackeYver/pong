@@ -70,68 +70,6 @@ void Init(xaudio *XAudio, resources *Resources)
     }
     
     XAudio->Resources = Resources;
-    
-#if 0
-    char const *FilenameAndPath[] = 
-    {
-        "data\\theme.wav",
-        "data\\paddle_bounce.wav",
-        "data\\border_bounce.wav",
-        "data\\score.wav",
-    };
-    
-    
-    //
-    // File read and source voices
-    // @debug
-    {
-        for (u32 Index = 0; Index < Audio_Count; ++Index)
-        {
-            u8 *Data = nullptr;
-            size_t DataSize;
-            
-            if (!win32_ReadFile(FilenameAndPath[Index], &Data, &DataSize))
-            {
-                printf("Failed to read file!\n");
-                assert(0);
-            }
-            
-            //
-            // Parse wav file
-            wav_data *WavDataPtr = &XAudio->Voices[Index].WavData;
-            b32 Result = ParseWav(Data, DataSize, WavDataPtr);
-            assert(Result);
-            
-            if (Data)
-            {
-                free(Data);
-                Data = nullptr;
-                DataSize = 0;
-            }
-            
-            tWAVEFORMATEX Format;
-            Format.wFormatTag      = WAVE_FORMAT_PCM;
-            Format.nChannels       = WavDataPtr->Format.NumberOfChannels;
-            Format.nSamplesPerSec  = WavDataPtr->Format.SampleRate;
-            Format.nAvgBytesPerSec = WavDataPtr->Format.AverageBytesPerSecond;
-            Format.nBlockAlign     = WavDataPtr->Format.BlockAlign;
-            Format.wBitsPerSample  = WavDataPtr->Format.SignificantBitsPerSample;
-            Format.cbSize = 0;
-            
-            xaudio_voice *Voice = &XAudio->Voices[Index];
-            Result = XAudio->Device->CreateSourceVoice(&Voice->SourceVoice, (WAVEFORMATEX*)&Format);
-            if (FAILED(Result))
-            {
-                assert(0);
-            }
-            
-            if (Index == (u32)Audio_Theme)
-            {
-                Voice->ShouldLoop = true;
-            }
-        }
-    }
-#endif
 }
 
 

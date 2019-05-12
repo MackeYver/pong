@@ -29,6 +29,7 @@
 #include "mathematics.h" // includes types.h
 
 
+
 typedef s32 body_index;
 
 enum shape_type
@@ -54,7 +55,7 @@ struct shape
 
 struct body
 {
-    // The dynamics system will do nothing with this, neither free nor allocate any memory.
+    // The dynamics system eill not do anything with this, neither free nor allocate any memory.
     void *UserData = nullptr; 
     
     shape Shape;
@@ -94,14 +95,21 @@ void Shutdown(dynamics_state *State);
 
 //
 // Add a new body to the simulation, returns the index of the body in the "body-array"
-body_index NewRectangleBody(dynamics_state *State, v2 Size, void *UserData = nullptr);
-body_index NewCircleBody(dynamics_state *State, f32 Radius, void *UserData = nullptr);
+body *NewRectangleBody(dynamics_state *State, v2 Size, void *UserData = nullptr);
+body *NewCircleBody(dynamics_state *State, f32 Radius, void *UserData = nullptr);
+
+
+//
+// Getters & Setters
 body *GetBody(dynamics_state *State, body_index BodyIndex);
+body_index GetBodyIndex(dynamics_state *State, body *Body);
+void SetP(dynamics_state *State, body_index BodyIndex, v2 P);
 
 
 //
 // Update all the bodies
 void Update(dynamics_state *State, f32 dt);
+
 
 //
 // Detect and resolve collisions

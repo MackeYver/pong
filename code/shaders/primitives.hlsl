@@ -23,26 +23,31 @@
 //
 
 
+
 //
 // Structs
 //
 
+cbuffer ConstantBuffer : register(b0)
+{
+    float4x4 WorldToClip;
+    float4x4 ObjectToWorld;
+    float4 Colour;
+};
+
+
 struct vs_input
 {
-    float2 P : Position0;
-    float2 T : TexCoord0;
+    float4 C : Colour0;
+    float3 P : Position0;
 };
 
 
-struct ps_input
-{	
+struct vs_output
+{
     float4 P : SV_Position;
-    float2 T : TexCoord0;
+    float4 C : Colour0;
 };
-
-
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
 
 
 
@@ -51,17 +56,17 @@ SamplerState gSampler : register(s0);
 // Shaders
 //
 
-ps_input vMain(vs_input In)
+vs_output vMain(vs_input In)
 {
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
+    vs_output Result;
+    Result.P = mul(float4(In.P, 1.0f), ObjectToWorld);
+    Result.C = In.C;
     
-    return Result;
+	return Result;
 }
 
 
-float4 pMain(ps_input In) : SV_TARGET
+float4 pMain(vs_output In) : SV_Target
 {
-    return gTexture.Sample(gSampler, In.T);
+	return In.C;
 }

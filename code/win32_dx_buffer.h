@@ -22,46 +22,34 @@
 // SOFTWARE.
 //
 
+#ifndef win32_dx_buffer__h
+#define win32_dx_buffer__h
 
-//
-// Structs
-//
+#ifdef DEBUG
+#include <stdio.h>
+#else
+#define printf(...)
+#endif
 
-struct vs_input
+#include <d3d11.h>
+#include "types.h"
+
+
+
+struct dx_buffer
 {
-    float2 P : Position0;
-    float2 T : TexCoord0;
+    ID3D11Buffer *Ptr = nullptr;
+    size_t Size = 0;
 };
 
 
-struct ps_input
-{	
-    float4 P : SV_Position;
-    float2 T : TexCoord0;
-};
+b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
+b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
 
+void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, size_t DataSize);
 
-Texture2D    gTexture : register(t0);
-SamplerState gSampler : register(s0);
+void Free(dx_buffer *Buffer);
 
 
 
-
-//
-// Shaders
-//
-
-ps_input vMain(vs_input In)
-{
-    ps_input Result;
-    Result.P = float4(In.P, 0.0f, 1.0f);
-    Result.T = In.T;
-    
-    return Result;
-}
-
-
-float4 pMain(ps_input In) : SV_TARGET
-{
-    return gTexture.Sample(gSampler, In.T);
-}
+#endif

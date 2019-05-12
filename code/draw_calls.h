@@ -27,7 +27,7 @@
 
 #include "mathematics.h"
 #include "resources.h"
-
+#include "memory_arena.h"
 
 
 //
@@ -45,15 +45,19 @@ struct display_metrics
 
 struct draw_calls
 {
-    u8 *Memory = nullptr;
-    size_t MemorySize = 0;
-    size_t MemoryUsed = 0;
+    memory_arena Memory;
+    
+    memory_arena PrimitiveLinesMemory;
+    u32 LineCount;
+    
+    memory_arena PrimitiveTrianglesMemory;
+    u32 TriangleCount;
     
     display_metrics DisplayMetrics;
 };
 
 void Init(draw_calls *DrawCalls, size_t Size, display_metrics DisplayMetrics);
-void ClearMemory(draw_calls *DrawCalls);
+void Clear(draw_calls *DrawCalls);
 void Shutdown(draw_calls *DrawCalls);
 
 
@@ -63,16 +67,16 @@ void Shutdown(draw_calls *DrawCalls);
 // Draw calls
 //
 
-void PushFilledRectangle(draw_calls *DrawCalls, v2 P, v2 Size, v4 Colour = v4_one);
-void PushTexturedRectangle(draw_calls *DrawCalls, v2 P, v2 Size, texture_index Index, v4 Colour = v4_one);
+void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
 
-void PushFilledCircle(draw_calls *DrawCalls, v2 P, f32 Radius, v4 Colour = v4_one);
-void PushTexturedCircle(draw_calls *DrawCalls, v2 P, f32 Radius, texture_index Index, v4 Colour = v4_one);
+void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
+void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
+
+void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
+void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
 
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
-
-void PushTexturedMesh(draw_calls *DrawCalls, v2 P, mesh_index MeshIndex, texture_index TextureIndex, 
-                      v2 Size = v2_one, v4 Colour = v4_one);
+void PushTexturedMesh(draw_calls *DrawCalls, v3 P, mesh_index MIndex, texture_index TIndex, v2 Size = v2_one, v4 Colour = v4_one);
 
 
 
@@ -83,10 +87,6 @@ void PushTexturedMesh(draw_calls *DrawCalls, v2 P, mesh_index MeshIndex, texture
 
 enum draw_call_type
 {
-    DrawCallType_FilledRectangle = 0,
-    DrawCallType_TexturedRectangle,
-    DrawCallType_FilledCircle,
-    DrawCallType_TexturedCircle,
     DrawCallType_Text,
     DrawCallType_TexturedMesh,
     
@@ -101,46 +101,6 @@ struct draw_call_header
 };
 
 
-struct draw_call_filled_rectangle
-{
-    draw_call_header Header;
-    v4 Colour;
-    v2 P;
-    v2 Size;
-    f32 Rotation;
-};
-
-
-struct draw_call_textured_rectangle
-{
-    draw_call_header Header;
-    v4 Colour;
-    v2 P;
-    v2 Size;
-    f32 Rotation;
-    texture_index TextureIndex;
-};
-
-
-struct draw_call_filled_circle
-{
-    draw_call_header Header;
-    v4 Colour;
-    v2 P;
-    f32 Radius;
-};
-
-
-struct draw_call_textured_circle
-{
-    draw_call_header Header;
-    v4 Colour;
-    v2 P;
-    f32 Radius;
-    texture_index TextureIndex;
-};
-
-
 struct draw_call_text
 {
     draw_call_header Header;
@@ -148,6 +108,7 @@ struct draw_call_text
     v2 P;
     f32 Rotation;
 };
+
 
 struct draw_call_textured_mesh
 {
