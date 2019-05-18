@@ -219,7 +219,7 @@ void Use(ID3D11DeviceContext *DC, shader_primitive *Shader)
 // Render primitives
 //
 
-void DrawPrimitives(ID3D11DeviceContext *DC, shader_primitive *Shader, D3D_PRIMITIVE_TOPOLOGY Topology, 
+void DrawPrimitives(ID3D11Device *Device, ID3D11DeviceContext *DC, shader_primitive *Shader, D3D_PRIMITIVE_TOPOLOGY Topology, 
                     memory_arena *Memory, u32 VertexCount)
 {
     assert(Topology == D3D_PRIMITIVE_TOPOLOGY_LINELIST || Topology == D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -230,7 +230,8 @@ void DrawPrimitives(ID3D11DeviceContext *DC, shader_primitive *Shader, D3D_PRIMI
     // Upload data to the GPU
     if (Shader->VertexBuffer.Size < Memory->Used)
     {
-        // Resize
+        b32 Result = ResizeBuffer(Device, &Shader->VertexBuffer, Memory->Used);
+        assert(Result);
     }
     
     UpdateBuffer(DC, &Shader->VertexBuffer, static_cast<void *>(Memory->Ptr), Memory->Used);

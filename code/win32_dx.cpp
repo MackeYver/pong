@@ -47,6 +47,7 @@
 //
 // Shutdown and Init
 //
+// TODO(Marcus): Unify and simpify the relase process... (Can we avoid having three different functions?).
 
 #define DX_RELEASE(x) State->x ? State->x->Release() : 0
 #define DX_SHUTDOWN(x) Shutdown(&State->x)
@@ -598,7 +599,7 @@ void RenderTexturedMesh(dx_state *State, m4 ObjectToWorld, s32 MeshIndex, s32 Te
 {
     ID3D11DeviceContext *DC = State->DeviceContext;
     
-    State->ShaderTextured.Constants.Colour = v4_one;
+    State->ShaderTextured.Constants.Colour = Colour;
     State->ShaderTextured.Constants.ObjectToWorld = ObjectToWorld;
     UpdateConstants(DC, &State->ShaderTextured);
     
@@ -620,6 +621,30 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
 {
     BeginRendering(State);
     
+    
+    //
+    // Process primitives
+    if (DrawCalls->LineCount > 0)
+    {
+        ID3D11DeviceContext *DC = State->DeviceContext;
+        
+        Use(DC, &State->ShaderPrimitive);
+        DrawPrimitives(State->Device, DC, &State->ShaderPrimitive, D3D_PRIMITIVE_TOPOLOGY_LINELIST, 
+                       &DrawCalls->PrimitiveLinesMemory, 2 * DrawCalls->LineCount);
+    }
+    
+    if (DrawCalls->TriangleCount > 0)
+    {
+        ID3D11DeviceContext *DC = State->DeviceContext;
+        
+        Use(DC, &State->ShaderPrimitive);
+        DrawPrimitives(State->Device, DC, &State->ShaderPrimitive, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, 
+                       &DrawCalls->PrimitiveTrianglesMemory, 3 * DrawCalls->TriangleCount);
+    }
+    
+    
+    //
+    // Process draw calls
     for (u8 *CurrAddress = DrawCalls->Memory.Ptr;
          CurrAddress < (DrawCalls->Memory.Ptr + DrawCalls->Memory.Used);
          )
@@ -651,27 +676,6 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
         }
         
         CurrAddress += Header->Size;
-    }
-    
-    
-    //
-    // Process primitives
-    if (DrawCalls->LineCount > 0)
-    {
-        ID3D11DeviceContext *DC = State->DeviceContext;
-        
-        Use(DC, &State->ShaderPrimitive);
-        DrawPrimitives(DC, &State->ShaderPrimitive, D3D_PRIMITIVE_TOPOLOGY_LINELIST, 
-                       &DrawCalls->PrimitiveLinesMemory, 2 * DrawCalls->LineCount);
-    }
-    
-    if (DrawCalls->TriangleCount > 0)
-    {
-        ID3D11DeviceContext *DC = State->DeviceContext;
-        
-        Use(DC, &State->ShaderPrimitive);
-        DrawPrimitives(DC, &State->ShaderPrimitive, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, 
-                       &DrawCalls->PrimitiveTrianglesMemory, 3 * DrawCalls->TriangleCount);
     }
     
     

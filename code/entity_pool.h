@@ -22,31 +22,34 @@
 // SOFTWARE.
 //
 
-#ifndef entities__h
-#define entities__h
+#ifndef entity_pool__h
+#define entity_pool__h
 
+#include "memory_arena.h"
 #include "mathematics.h"
-#include "resources.h"
-#include "dynamics.h"
+#include "entity.h"
+
 struct draw_calls;
-struct game_state;
+struct dynamics_state;
+struct free_node;
 
-
-struct entity
+struct entity_pool
 {
-    v4 Colour;
-    v2 P; // read-only! Note: this is probably a bad idea...
-    v2 Size = v2_one;
-    v2 Scale = v2_one;
-    body_index BodyIndex = -1;
-    mesh_index MeshIndex = -1;
-    texture_index TextureIndex = -1;
+    memory_arena Memory;
+    u32 EntityCount = 0;
     
-    voice_index Audio_BallBounce = -1;
+    free_node *FreeList = nullptr;
 };
 
-void InitEntities(game_state *State);
-void Update(dynamics_state *State, entity *Entity);
-void Render(draw_calls *DrawCalls, entity *Entity);
+
+void Init(entity_pool *Pool);
+void Shutdown(entity_pool *Pool);
+
+entity *NewEntity(entity_pool *Pool);
+void RemoveEntity(entity_pool *Pool, entity *Entity);
+
+void UpdateAll(dynamics_state *Dynamics, entity_pool *Pool, f32 dt);
+void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 RetroMode);
+
 
 #endif

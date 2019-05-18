@@ -75,8 +75,9 @@ struct body
 
 struct collision_info
 {
-    v2 N = v2_zero;
+    void *UserData[2] = {};
     body_index BodiesInvolved[2] = {};
+    v2 N = v2_zero;
     f32 ForceModifier = 0.0f;
     f32 Depth = 0.0f;
     b32 SkipInterpenetration = false;

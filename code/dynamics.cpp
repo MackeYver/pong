@@ -195,6 +195,8 @@ void DetectCollisions(dynamics_state *State, std::vector<collision_info>& Output
             {
                 Collision.BodiesInvolved[0] = IndexA;
                 Collision.BodiesInvolved[1] = IndexB;
+                Collision.UserData[0] = Body[0]->UserData;
+                Collision.UserData[1] = Body[1]->UserData;
                 Output.push_back(Collision);
             }
         }

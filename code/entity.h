@@ -22,35 +22,42 @@
 // SOFTWARE.
 //
 
-#ifndef win32_dx_buffer__h
-#define win32_dx_buffer__h
+#ifndef entity__h
+#define entity__h
 
-#ifdef DEBUG
-#include <stdio.h>
-#else
-#define printf(...)
-#endif
+#include "mathematics.h"
+#include "resources.h"
+#include "dynamics.h"
+struct draw_calls;
 
-#include <d3d11.h>
-#include "types.h"
-
-
-
-struct dx_buffer
+enum entity_type
 {
-    ID3D11Buffer *Ptr = nullptr;
-    size_t Size = 0;
+    EntityType_Null = 0,
+    EntityType_Ball,
+    EntityType_Paddle,
+    EntityType_Wall,
+    
+    EntityType_Count,
 };
 
-b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
 
-b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, size_t NewSize);
-void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, size_t DataSize);
+struct entity
+{
+    entity_type Type = EntityType_Null;
+    v4 Colour = v4_one;
+    v3 P; // read-only! Note: this is probably a bad idea...
+    v2 Size = v2_one;
+    v2 Scale = v2_one;
+    
+    body_index BodyIndex = -1;
+    mesh_index MeshIndex = -1;
+    texture_index TextureIndex = -1;
+};
 
-void Free(dx_buffer *Buffer);
+void Init(entity *Entity);
+void Shutdown(entity *Entity);
 
-
+void Update(dynamics_state *Dynamics, entity *Entity, f32 dt);
+void Render(draw_calls *DrawCalls, entity *Entity, b32 UseRetroMode);
 
 #endif

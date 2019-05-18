@@ -32,7 +32,7 @@
 #endif
 
 #include "types.h"
-
+#include <stdlib.h>
 
 
 
@@ -105,6 +105,7 @@ static b32 Resize(memory_arena *Memory, size_t NewSize)
         if (NewPtr)
         {
             Memory->Ptr = NewPtr;
+            Memory->Size = NewSize;
             Result = true;
         }
     }

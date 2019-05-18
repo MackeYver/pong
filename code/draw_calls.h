@@ -30,6 +30,8 @@
 #include "memory_arena.h"
 
 
+
+
 //
 // Draw call management
 //
@@ -67,14 +69,21 @@ void Shutdown(draw_calls *DrawCalls);
 // Draw calls
 //
 
+//
+// Primitives
 void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
 
 void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
-void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
+void PushPrimitiveTriangleFilled(draw_calls  *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
 
 void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
-void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
+void PushPrimitiveRectangleFilled(draw_calls  *DrawCalls, v3 P0, v3 P1, v4 Colour);
 
+void PushPrimitiveCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
+void PushPrimitiveCircleFilled(draw_calls  *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
+
+//
+// Draw calls, meshes
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
 void PushTexturedMesh(draw_calls *DrawCalls, v3 P, mesh_index MIndex, texture_index TIndex, v2 Size = v2_one, v4 Colour = v4_one);
 

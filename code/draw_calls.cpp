@@ -87,6 +87,7 @@ struct vertex_PC
     v3 P;
 };
 
+
 void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 {
     size_t Size = 2 * sizeof(vertex_PC);
@@ -103,18 +104,6 @@ void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
     Vertices[1].C = Colour;
     
     ++DrawCalls->LineCount;
-}
-
-
-void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
-{
-    v3 P01 = V3(P1.x, P0.y, 0.5f * (P0.z + P1.z));
-    v3 P10 = V3(P0.x, P1.y, 0.5f * (P0.z + P1.z));
-    
-    PushPrimitiveLine(DrawCalls, P0, P01, Colour);
-    PushPrimitiveLine(DrawCalls, P01, P1, Colour);
-    PushPrimitiveLine(DrawCalls, P1, P10, Colour);
-    PushPrimitiveLine(DrawCalls, P10, P0, Colour);
 }
 
 
@@ -136,6 +125,8 @@ void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 
     }
     
     vertex_PC *Vertices = reinterpret_cast<vertex_PC *>(Push(&DrawCalls->PrimitiveTrianglesMemory, Size));
+    assert(Vertices);
+    
     Vertices[0].P = P0;
     Vertices[0].C = Colour;
     Vertices[1].P = P1;
@@ -143,7 +134,19 @@ void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 
     Vertices[2].P = P2;
     Vertices[2].C = Colour;
     
-    DrawCalls->TriangleCount += 3;
+    ++DrawCalls->TriangleCount;
+}
+
+
+void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+{
+    v3 P01 = V3(P1.x, P0.y, 0.5f * (P0.z + P1.z));
+    v3 P10 = V3(P0.x, P1.y, 0.5f * (P0.z + P1.z));
+    
+    PushPrimitiveLine(DrawCalls, P0, P01, Colour);
+    PushPrimitiveLine(DrawCalls, P01, P1, Colour);
+    PushPrimitiveLine(DrawCalls, P1, P10, Colour);
+    PushPrimitiveLine(DrawCalls, P10, P0, Colour);
 }
 
 
@@ -154,6 +157,44 @@ void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour
     
     PushPrimitiveTriangleFilled(DrawCalls, P0, P01, P1, Colour);
     PushPrimitiveTriangleFilled(DrawCalls, P0, P1, P10, Colour);
+}
+
+
+void PushPrimitiveCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount)
+{
+    f32 Theta = Tau32 / (f32)SliceCount;
+    f32 Angle = 0.0f;
+    
+    v3 P0 = P + Radius * V3(Sin(Angle), Cos(Angle), 0.0f);
+    
+    for (u32 Index = 0; Index < SliceCount; ++Index)
+    {
+        Angle += Theta;
+        v3 P1 = P + Radius * V3(Cos(Angle), Sin(Angle), 0.0f);
+        
+        PushPrimitiveLine(DrawCalls, P0, P1, Colour);
+        
+        P0 = P1;
+    }
+}
+
+
+void PushPrimitiveCircleFilled(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount)
+{
+    f32 Theta = Tau32 / (f32)SliceCount;
+    f32 Angle = 0.0f;
+    
+    v3 P0 = P + Radius * V3(Sin(Angle), Cos(Angle), 0.0f);
+    
+    for (u32 Index = 0; Index <= SliceCount; ++Index)
+    {
+        Angle += Theta;
+        v3 P1 = P + Radius * V3(Cos(Angle), Sin(Angle), 0.0f);
+        
+        PushPrimitiveTriangleFilled(DrawCalls, P, P0, P1, Colour);
+        
+        P0 = P1;
+    }
 }
 
 

@@ -22,8 +22,12 @@
 // SOFTWARE.
 //
 
-#ifndef win32_dx_buffer__h
-#define win32_dx_buffer__h
+#include "entity.h"
+#include "draw_calls.h"
+
+#include "entity_ball.h"
+#include "entity_wall.h"
+#include "entity_paddle.h"
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -31,26 +35,69 @@
 #define printf(...)
 #endif
 
-#include <d3d11.h>
-#include "types.h"
 
 
+//
+// Init and shutdwon
+//
 
-struct dx_buffer
+void Init(entity *Entity)
 {
-    ID3D11Buffer *Ptr = nullptr;
-    size_t Size = 0;
-};
+    Entity->Colour = v4_one;
+    Entity->P = v3_zero; 
+    Entity->Size = v2_one;
+    Entity->Scale = v2_one;
+    Entity->BodyIndex = -1;
+    Entity->MeshIndex = -1;
+    Entity->TextureIndex = -1;
+}
 
-b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-
-b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, size_t NewSize);
-void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, size_t DataSize);
-
-void Free(dx_buffer *Buffer);
+void Shutdown(entity *Entity)
+{
+}
 
 
 
-#endif
+
+//
+// Update
+//
+
+void Update(dynamics_state *Dynamics, entity *Entity, f32 dt)
+{
+    body *Body = GetBody(Dynamics, Entity->BodyIndex);
+    Entity->P = V3(Body->P, 0.0f);
+}
+
+
+
+
+//
+// Render
+//
+
+void Render(draw_calls *DrawCalls, entity *Entity, b32 UseRetroMode)
+{
+    switch (Entity->Type)
+    {
+        case EntityType_Ball:
+        {
+            RenderAsBall(DrawCalls, Entity, UseRetroMode);
+        } break;
+        
+        case EntityType_Paddle:
+        {
+            RenderAsPaddle(DrawCalls, Entity, UseRetroMode);
+        } break;
+        
+        case EntityType_Wall:
+        {
+            RenderAsWall(DrawCalls, Entity, UseRetroMode);
+        } break;
+        
+        default:
+        {
+            printf("%s: Tried to render unknown entity type!\n", __FILE__);
+        } break;
+    }
+}

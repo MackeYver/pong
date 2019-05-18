@@ -142,7 +142,7 @@ void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *D
     
     if (DataSize > Buffer->Size)
     {
-        printf("Uploaded data is larger than the buffer...\n");
+        printf("%s: Uploaded data is larger than the buffer...\n", __FILE__);
     }
     
     D3D11_MAPPED_SUBRESOURCE MappedResource;
@@ -151,6 +151,25 @@ void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *D
     DeviceContext->Map(Buffer->Ptr, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
     memcpy(MappedResource.pData, Data, DataSize);
     DeviceContext->Unmap(Buffer->Ptr, 0);
+}
+
+
+b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, size_t NewSize)
+{
+    D3D11_BUFFER_DESC Desc;
+    Buffer->Ptr->GetDesc(&Desc);
+    
+    Free(Buffer);
+    
+    b32 Result = CreateDynamicVertexBuffer(Device, nullptr, NewSize, Desc.StructureByteStride, Buffer);
+    if (!Result)
+    {
+        printf("%s: Failed to create the vertex buffer for shader_primitives.\n", __FILE__);
+    }
+    
+    Buffer->Size = NewSize;
+    
+    return Result;
 }
 
 

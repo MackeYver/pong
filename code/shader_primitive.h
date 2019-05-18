@@ -65,6 +65,6 @@ void Use(ID3D11DeviceContext *DC, shader_primitive *Shader);
 void Shutdown(shader_primitive *Shader);
 
 void UpdateConstants(ID3D11DeviceContext *DeviceContext, shader_primitive *Shader);
-void DrawPrimitives(ID3D11DeviceContext *DC, shader_primitive *Shader, D3D_PRIMITIVE_TOPOLOGY Topology, 
+void DrawPrimitives(ID3D11Device *Device, ID3D11DeviceContext *DC, shader_primitive *Shader, D3D_PRIMITIVE_TOPOLOGY Topology, 
                     memory_arena *Memory, u32 VertexCount);
 #endif

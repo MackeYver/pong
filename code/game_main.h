@@ -29,7 +29,12 @@
 #include "audio.h"
 #include "dynamics.h"
 #include "resources.h"
-#include "entities.h"
+
+#include "entity_pool.h"
+#include "entity.h"
+#include "entity_ball.h"
+#include "entity_wall.h"
+#include "entity_paddle.h"
 
 #include <vector>
 #include <map>
@@ -63,12 +68,16 @@ struct game_state
     draw_calls DrawCalls;
     mesh_index BackgroundMesh;
     texture_index BackgroundTexture;
+    b32 UseRetroMode = false;
+    
     
     //
     // Audio
     audio Audio;
     voice_index Audio_Theme;
     voice_index Audio_Score;
+    voice_index Audio_PaddleBounce;
+    voice_index Audio_WallBounce;
     
     //
     // Input
@@ -80,7 +89,7 @@ struct game_state
     
     //
     // Entities
-    entity Entities[5];
+    entity_pool EntityPool;
     entity *Players[2];
     entity *Walls[2];
     entity *Ball;

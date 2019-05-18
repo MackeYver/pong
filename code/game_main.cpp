@@ -53,7 +53,7 @@ void End(game_state *State);
 
 
 //
-// "Public" functions
+// Init and shutdown
 //
 
 void Init(game_state *State)
@@ -64,11 +64,24 @@ void Init(game_state *State)
     State->Scores[0] = 0;
     State->Scores[1] = 0;
     
+    Init(&State->EntityPool);
+    
     
     //
     // Setup entities
-    InitEntities(State);
-    ResetPositions(State);
+    {
+        v2 WindowSize = V2((f32)State->DrawCalls.DisplayMetrics.WindowWidth, (f32)State->DrawCalls.DisplayMetrics.WindowHeight);
+        
+        mesh_index MeshIndex_Quad1x1 = CreateMeshFor1x1Quad(&State->Resources);
+        
+        SetupAsBall(&State->Resources, &State->Dynamics, &State->EntityPool, MeshIndex_Quad1x1, &State->Ball);
+        SetupPaddles(&State->Resources, &State->Dynamics, &State->EntityPool, MeshIndex_Quad1x1, (entity **)&State->Players);
+        InitWalls(&State->Resources, &State->Dynamics, &State->EntityPool, WindowSize, (entity **)&State->Walls);
+        
+        ResetPositions(State);
+    }
+    
+    
     
     
     //
@@ -81,7 +94,16 @@ void Init(game_state *State)
         VIndex = LoadWAV(&State->Resources, "data\\score.wav");
         assert(VIndex >= 0);
         State->Audio_Score = VIndex;
+        
+        VIndex = LoadWAV(&State->Resources, "data\\wall_bounce.wav");
+        assert(VIndex >= 0);
+        State->Audio_WallBounce = VIndex;
+        
+        VIndex = LoadWAV(&State->Resources, "data\\paddle_bounce.wav");
+        assert(VIndex >= 0);
+        State->Audio_PaddleBounce = VIndex;
     }
+    
     
     //
     // Background texture and mesh
@@ -141,6 +163,19 @@ void Init(game_state *State)
     State->Audio.Play(State->Audio_Theme);
 }
 
+
+void Shutdown(game_state *State)
+{
+    assert(State);
+    Shutdown(&State->EntityPool);
+}
+
+
+
+
+//
+// Update
+//
 
 void UpdateAI(game_state *State, f32 dt)
 {
@@ -225,13 +260,6 @@ void Update(game_state *State, f32 dt)
         
         body *BallBody = GetBody(&State->Dynamics, State->Ball->BodyIndex);
         
-        {
-            f32 z = 0.8f;
-            v3 P0 = V3(0.0f, 0.0f, z);
-            v3 P1 = V3(BallBody->P, z);
-            PushPrimitiveLine(&State->DrawCalls, P0, P1, V4(1.0f, 1.0f, 0.0f, 1.0f));
-        }
-        
         for (auto& Collision : Collisions)
         {
             //
@@ -268,12 +296,12 @@ void Update(game_state *State, f32 dt)
             // Play sounds
             if (TheBallIsInvolved && APlayerIsInvolved)
             {
-                State->Audio.Play(State->Players[0]->Audio_BallBounce);
+                State->Audio.Play(State->Audio_PaddleBounce);
                 Collision.ForceModifier = 0.15f;
             }
             else if (TheBallIsInvolved && ABorderIsInvolved)
             {
-                State->Audio.Play(State->Walls[0]->Audio_BallBounce);
+                State->Audio.Play(State->Audio_WallBounce);
                 
                 f32 L = Length(BallBody->dP);
                 if (L > 900.0f)
@@ -305,114 +333,13 @@ void Update(game_state *State, f32 dt)
     
     
     //
-    // Update entities
-    {
-        for (u32 Index = 0; Index < 5; ++Index)
-        {
-            entity *Entity = &State->Entities[Index];
-            Update(&State->Dynamics, Entity);
-        }
-    }
+    // Update
+    UpdateAll(&State->Dynamics, &State->EntityPool, dt);
     
     
     //
     // Rendering
     Render(State);
-}
-
-
-void Shutdown(game_state *State)
-{
-    assert(State);
-}
-
-
-
-
-//
-// Change game mode
-//
-
-void ServeBoll(game_state *State)
-{
-    //
-    // Random starting angle
-    u32 dT = 40;
-    f32 Theta = Pi32 * ((f32)dT / 180.0f);
-    
-    u32 RandInt = rand() % dT;
-    f32 Angle = Pi32 * ((f32)RandInt / 180.0f);
-    
-    u32 Direction = rand() % 2;
-    if (Direction == 0)
-    {
-        Angle = Tau32 - 0.5f*Theta + Angle;
-    }
-    else
-    {
-        Angle = Pi32 - 0.5f*Theta + Angle;
-    }
-    
-    body *Body = GetBody(&State->Dynamics, State->Ball->BodyIndex);
-    Body->F = V2(Cos(Angle), Sin(Angle)) * 30000.0f;
-}
-
-
-// Resume a that has already been started (after a player scored).
-void Start(game_state *State)
-{
-    assert(State);
-    
-    State->Audio.Stop(State->Audio_Theme);
-    
-    ResetPositions(State);
-    State->GameMode = GameMode_Playing;
-    
-    ServeBoll(State);
-}
-
-
-// Start a new game.
-void NewGame(game_state *State)
-{
-    assert(State);
-    
-    State->Audio.Stop(State->Audio_Theme);
-    
-    ResetPositions(State);
-    State->GameMode = GameMode_Playing;
-    
-    State->Scores[0] = 0;
-    State->Scores[1] = 0;
-    
-    ServeBoll(State);
-}
-
-
-void Score(game_state *State, u32 ScoringPlayerIndex)
-{
-    State->Audio.Play(State->Audio_Score);
-    
-    State->GameMode = GameMode_Scored;
-    ++State->Scores[ScoringPlayerIndex];
-    ResetPositions(State);
-}
-
-
-void Pause(game_state *State)
-{
-    assert(State);
-    
-    State->GameMode = GameMode_Paused;
-}
-
-
-void End(game_state *State)
-{
-    assert(State);
-    
-    State->GameMode = GameMode_Inactive;
-    State->Audio.Play(State->Audio_Theme);
 }
 
 
@@ -430,44 +357,17 @@ void Render(game_state *State)
     
     
     //
-    // @debug
-    {
-        v3 P0 = V3( 10.0f,  10.0f, 0.1f);
-        v3 P1 = V3(810.0f, 110.0f, 0.1f);
-        v3 P2 = V3(710.0f, 810.0f, 0.1f);
-        PushPrimitiveTriangleOutline(&State->DrawCalls, P0, P1, P2, V4(1.0f, 0.0f, 0.0f, 1.0f));
-        
-        P0 = V3(210.0f, 410.0f, 0.1f);
-        P1 = V3(510.0f, 450.0f, 0.1f);
-        P2 = V3(310.0f, 510.0f, 0.1f);
-        PushPrimitiveTriangleOutline(&State->DrawCalls, P0, P1, P2, V4(0.0f, 0.0f, 1.0f, 1.0f));
-        
-        P0 = V3(710.0f, 210.0f, 0.1f);
-        P1 = V3(810.0f, 310.0f, 0.1f);
-        PushPrimitiveRectangleOutline(&State->DrawCalls, P0, P1, V4(0.0f, 1.0f, 0.0f, 1.0f));
-        
-        P0 = V3(210.0f, 310.0f, 0.1f);
-        P1 = V3(610.0f, 410.0f, 0.1f);
-        PushPrimitiveRectangleFilled(&State->DrawCalls, P0, P1, V4(0.0f, 1.0f, 1.0f, 1.0f));
-    }
-    
-    //
     // Background
+    if (!State->UseRetroMode)
     {
         v4 Colour = V4(0.6f, 0.6f, 0.8f, 1.0f);
-        PushTexturedMesh(&State->DrawCalls, V3(0.0f, 0.0f, 0.9f), State->BackgroundMesh, State->BackgroundTexture, v2_one, Colour);
+        PushTexturedMesh(DrawCalls, V3(0.0f, 0.0f, 0.9f), State->BackgroundMesh, State->BackgroundTexture, v2_one, Colour);
     }
     
     
     //
     // Entities
-    {
-        for (u32 Index = 0; Index < 5; ++Index)
-        {
-            entity *Entity = &State->Entities[Index];
-            Render(&State->DrawCalls, Entity);
-        }
-    }
+    RenderAll(DrawCalls, &State->EntityPool, State->UseRetroMode);
     
     
     f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
@@ -497,6 +397,7 @@ void Render(game_state *State)
             PushText(DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 0 to start a battle of the AI");
             PushText(DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 1 to start a one player game");
             PushText(DrawCalls, V2(0.5f * Width, y + 3.0f * dy), L"Press 2 to start a two player game");
+            PushText(DrawCalls, V2(0.5f * Width, y + 4.0f * dy), L"  Press G to change graphic mode");
         } break;
         
         case GameMode_Paused:
@@ -522,6 +423,12 @@ void Render(game_state *State)
 
 void ProcessInput(game_state *State)
 {
+    if (State->PressedKeys.count(0x47) > 0) // Key G, Change graphics mode
+    {
+        State->PressedKeys.erase(0x47);
+        State->UseRetroMode = !State->UseRetroMode;
+    }
+    
     if (State->GameMode == GameMode_Inactive)
     {
         if (State->PressedKeys.count(0x30) > 0) // Key 0, AI vs AI
@@ -603,6 +510,95 @@ void ProcessInput(game_state *State)
             }
         }
     }
+}
+
+
+
+
+//
+// Change game mode
+//
+
+void ServeBoll(game_state *State)
+{
+    //
+    // Random starting angle
+    u32 dT = 40;
+    f32 Theta = Pi32 * ((f32)dT / 180.0f);
+    
+    u32 RandInt = rand() % dT;
+    f32 Angle = Pi32 * ((f32)RandInt / 180.0f);
+    
+    u32 Direction = rand() % 2;
+    if (Direction == 0)
+    {
+        Angle = Tau32 - 0.5f*Theta + Angle;
+    }
+    else
+    {
+        Angle = Pi32 - 0.5f*Theta + Angle;
+    }
+    
+    body *Body = GetBody(&State->Dynamics, State->Ball->BodyIndex);
+    Body->F = V2(Cos(Angle), Sin(Angle)) * 10000.0f;
+}
+
+
+// Resume a that has already been started (after a player scored).
+void Start(game_state *State)
+{
+    assert(State);
+    
+    State->Audio.Stop(State->Audio_Theme);
+    
+    ResetPositions(State);
+    State->GameMode = GameMode_Playing;
+    
+    ServeBoll(State);
+}
+
+
+// Start a new game.
+void NewGame(game_state *State)
+{
+    assert(State);
+    
+    State->Audio.Stop(State->Audio_Theme);
+    
+    ResetPositions(State);
+    State->GameMode = GameMode_Playing;
+    
+    State->Scores[0] = 0;
+    State->Scores[1] = 0;
+    
+    ServeBoll(State);
+}
+
+
+void Score(game_state *State, u32 ScoringPlayerIndex)
+{
+    State->Audio.Play(State->Audio_Score);
+    
+    State->GameMode = GameMode_Scored;
+    ++State->Scores[ScoringPlayerIndex];
+    ResetPositions(State);
+}
+
+
+void Pause(game_state *State)
+{
+    assert(State);
+    
+    State->GameMode = GameMode_Paused;
+}
+
+
+void End(game_state *State)
+{
+    assert(State);
+    
+    State->GameMode = GameMode_Inactive;
+    State->Audio.Play(State->Audio_Theme);
 }
 
 
