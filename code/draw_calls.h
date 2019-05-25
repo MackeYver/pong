@@ -76,7 +76,8 @@ void PushTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
 void PushTriangleFilled(draw_calls  *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
 
 void PushRectangleOutline(draw_calls *DrawCalls, v3 P0, v3   P1, v4 Colour);
-void PushRectangleFilled(draw_calls  *DrawCalls, v3 P0, v3   P1, v4 Colour);void PushRectangleFilled(draw_calls  *DrawCalls, v3  P, v2 Size, v4 Colour);
+void PushRectangleFilled(draw_calls  *DrawCalls, v3 P0, v3   P1, v4 Colour);
+void PushRectangleFilled(draw_calls  *DrawCalls, v3  P, v2 Size, v4 Colour);
 
 void PushCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
 void PushCircleFilled(draw_calls  *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
@@ -84,6 +85,9 @@ void PushCircleFilled(draw_calls  *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 S
 //
 // Draw calls, textured
 void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text, size_index Size = SI_Medium, colour_index Colour = CI_White);
+void PushShadowedText(draw_calls *DrawCalls, v2 P, wchar_t const *Text, size_index Size = SI_Medium,
+                      colour_index ShadowColour = CI_Black, colour_index TextColour = CI_White);
+
 void PushTexturedMesh(draw_calls *DrawCalls, v3 P, mesh_index MIndex, texture_index TIndex, v2 Size = v2_one, v4 Colour = v4_one);
 
 

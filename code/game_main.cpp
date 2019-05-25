@@ -376,12 +376,22 @@ void Render(game_state *State)
     
     //
     // Scores
-    wchar_t ScoreString[4];
-    _snwprintf_s(ScoreString, 4, 3, L"%u", State->Scores[0]);
-    PushText(DrawCalls, V2(0.5f * Width - 70.0f, 25.0f), ScoreString);
-    
-    _snwprintf_s(ScoreString, 4, 3, L"%u", State->Scores[1]);
-    PushText(DrawCalls, V2(0.5f * Width + 70.0f, 25.0f), ScoreString);
+    {
+        wchar_t ScoreString[2][4];
+        _snwprintf_s(ScoreString[0], 4, 3, L"%u", State->Scores[0]);
+        _snwprintf_s(ScoreString[1], 4, 3, L"%u", State->Scores[1]);
+        
+        if (State->RenderAsPrimitives)
+        {
+            PushText(DrawCalls, V2(0.5f * Width - 70.0f, 25.0f), ScoreString[0], SI_Medium, CI_Black);
+            PushText(DrawCalls, V2(0.5f * Width + 70.0f, 25.0f), ScoreString[1], SI_Medium, CI_Black);
+        }
+        else
+        {
+            PushShadowedText(DrawCalls, V2(0.5f * Width - 70.0f, 25.0f), ScoreString[0], SI_Medium);
+            PushShadowedText(DrawCalls, V2(0.5f * Width + 70.0f, 25.0f), ScoreString[1], SI_Medium);
+        }
+    }
     
     
     //
@@ -392,35 +402,30 @@ void Render(game_state *State)
         {
             f32  y = 200.0f;
             f32 dy =  50.0f;
+            f32  x = 0.5f * Width;
             
-            v2 Offset = v2_zero;
-            colour_index Colour = CI_Black;
-            size_index Size = SI_Medium;
+            PushShadowedText(DrawCalls, V2(x, y)            , L"Pong!", SI_Large);
+            PushShadowedText(DrawCalls, V2(x, y + dy)       , L"-----", SI_Large);
+            PushShadowedText(DrawCalls, V2(x, y + 2.0f * dy), L"Press 0 to start a battle of the AI", SI_Medium);
+            PushShadowedText(DrawCalls, V2(x, y + 3.0f * dy), L"Press 1 to start a one player game" , SI_Medium);
+            PushShadowedText(DrawCalls, V2(x, y + 4.0f * dy), L"Press 2 to start a two player game" , SI_Medium);
             
-            for (int Index = 0; Index < 2; ++Index)
-            {
-                PushText(DrawCalls, Offset + V2(0.5f * Width, y)            , L"Pong!", Size, Colour);
-                PushText(DrawCalls, Offset + V2(0.5f * Width, y + dy)       , L"-----", Size, Colour);
-                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 2.0f * dy), L"Press 0 to start a battle of the AI", Size, Colour);
-                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 3.0f * dy), L"Press 1 to start a one player game", Size, Colour);
-                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 4.0f * dy), L"Press 2 to start a two player game", Size, Colour);
-                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 5.0f * dy), L"Press G to change graphic mode", Size, Colour);
-                
-                Offset += V2(4.0f, 3.0f);
-                Colour = static_cast<colour_index>(static_cast<int>(Colour) - 1);
-            }
+            PushShadowedText(DrawCalls, V2(x, y + 5.2f * dy), L"Left paddle: Up = W, Down = S", SI_Small);
+            PushShadowedText(DrawCalls, V2(x, y + 5.9f * dy), L"Right paddle: Up = Up arrow, Down = Down arrow", SI_Small);
+            PushShadowedText(DrawCalls, V2(x, y + 6.6f * dy), L"Press G to change graphics mode", SI_Small);
+            PushShadowedText(DrawCalls, V2(x, y + 7.3f * dy), L"Press R to reset the game"     , SI_Small);
         } break;
         
         case GameMode_Paused:
         {
-            PushText(DrawCalls, V2(0.5f * Width, 200.0f), L"Paused!");
+            PushShadowedText(DrawCalls, V2(0.5f * Width, 200.0f), L"Paused!", SI_Large);
         } break;
         
         case GameMode_Scored:
         {
-            PushText(DrawCalls, V2(0.5f * Width, 200.0f), L"Score!");
-            PushText(DrawCalls, V2(0.5f * Width, 235.0f), L"------");
-            PushText(DrawCalls, V2(0.5f * Width, 290.0f), L"Press P to resume");
+            PushShadowedText(DrawCalls, V2(0.5f * Width, 200.0f), L"Score!", SI_Medium);
+            PushShadowedText(DrawCalls, V2(0.5f * Width, 235.0f), L"------", SI_Medium);
+            PushShadowedText(DrawCalls, V2(0.5f * Width, 290.0f), L"Press P to resume", SI_Medium);
         } break;
     }
 }

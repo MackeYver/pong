@@ -231,8 +231,17 @@ void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text, size_index SizeI
     DrawCall->SizeIndex = SizeIndex;
     
     // We store the text in memory, after the draw call struct
-    DrawCall->Text = reinterpret_cast<wchar_t *>(DrawCall + DrawCallSize); 
+    //DrawCall->Text = reinterpret_cast<wchar_t *>(DrawCall + DrawCallSize); 
+    DrawCall->Text = reinterpret_cast<wchar_t *>(reinterpret_cast<size_t>(DrawCall) + DrawCallSize); 
     wcsncpy_s(DrawCall->Text, TextSize, Text, TextSize);
+}
+
+
+void PushShadowedText(draw_calls *DrawCalls, v2 P, wchar_t const *Text, size_index Size, colour_index SC, colour_index TC)
+{
+    v2 Offset = V2(3.0f, 3.0f);
+    PushText(DrawCalls, P - Offset, Text, Size, SC);
+    PushText(DrawCalls,          P, Text, Size, TC);
 }
 
 

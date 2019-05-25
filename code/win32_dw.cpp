@@ -183,7 +183,7 @@ b32 Init(dw_state *State, dx_state *DXState)
                                                  DWRITE_FONT_WEIGHT_NORMAL,
                                                  DWRITE_FONT_STYLE_NORMAL,
                                                  DWRITE_FONT_STRETCH_NORMAL,
-                                                 96.0f / 4.0f,
+                                                 96.0f / 2.0f,
                                                  L"en-GB",
                                                  &State->TextFormats[0]);
         if (FAILED(Result))
@@ -240,7 +240,7 @@ b32 Init(dw_state *State, dx_state *DXState)
                                                  DWRITE_FONT_WEIGHT_NORMAL,
                                                  DWRITE_FONT_STYLE_NORMAL,
                                                  DWRITE_FONT_STRETCH_NORMAL,
-                                                 96.0f / 2.0f,
+                                                 96.0f / 4.0f,
                                                  L"en-GB",
                                                  &State->TextFormats[2]);
         if (FAILED(Result))
