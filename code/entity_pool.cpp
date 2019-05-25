@@ -173,7 +173,7 @@ void UpdateAll(dynamics_state *Dynamics, entity_pool *Pool, f32 dt)
 }
 
 
-void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 UseRetroMode)
+void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 RenderAsPrimitives)
 {
     u32 Capacity = Pool->Memory.Size / sizeof(entity);
     for (u32 Index = 0; Index < Capacity; ++Index)
@@ -185,6 +185,13 @@ void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 UseRetroMode)
             continue;
         }
         
-        Render(DrawCalls, Entity, UseRetroMode);
+        if (RenderAsPrimitives)
+        {
+            RenderBody(DrawCalls, Entity);
+        }
+        else
+        {
+            Render(DrawCalls, Entity);
+        }
     }
 }

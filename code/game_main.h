@@ -32,9 +32,6 @@
 
 #include "entity_pool.h"
 #include "entity.h"
-#include "entity_ball.h"
-#include "entity_wall.h"
-#include "entity_paddle.h"
 
 #include <vector>
 #include <map>
@@ -68,7 +65,7 @@ struct game_state
     draw_calls DrawCalls;
     mesh_index BackgroundMesh;
     texture_index BackgroundTexture;
-    b32 UseRetroMode = false;
+    b32 RenderAsPrimitives = false;
     
     
     //

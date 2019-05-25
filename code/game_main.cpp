@@ -274,7 +274,7 @@ void Update(game_state *State, f32 dt)
             if ((Collision.BodiesInvolved[0] == State->Ball->BodyIndex) || (Collision.BodiesInvolved[1] == State->Ball->BodyIndex))
             {
                 TheBallIsInvolved = true;
-            }
+            } 
             
             for (u32 Index = 0; Index < 2; ++Index)
             {
@@ -358,7 +358,7 @@ void Render(game_state *State)
     
     //
     // Background
-    if (!State->UseRetroMode)
+    if (!State->RenderAsPrimitives)
     {
         v4 Colour = V4(0.6f, 0.6f, 0.8f, 1.0f);
         PushTexturedMesh(DrawCalls, V3(0.0f, 0.0f, 0.9f), State->BackgroundMesh, State->BackgroundTexture, v2_one, Colour);
@@ -367,7 +367,7 @@ void Render(game_state *State)
     
     //
     // Entities
-    RenderAll(DrawCalls, &State->EntityPool, State->UseRetroMode);
+    RenderAll(DrawCalls, &State->EntityPool, State->RenderAsPrimitives);
     
     
     f32 const Width  = (f32)DrawCalls->DisplayMetrics.WindowWidth;
@@ -391,13 +391,24 @@ void Render(game_state *State)
         case GameMode_Inactive:
         {
             f32  y = 200.0f;
-            f32 dy =  70.0f;
+            f32 dy =  50.0f;
             
-            PushText(DrawCalls, V2(0.5f * Width, y)            , L"Pong!");
-            PushText(DrawCalls, V2(0.5f * Width, y + dy)       , L"Press 0 to start a battle of the AI");
-            PushText(DrawCalls, V2(0.5f * Width, y + 2.0f * dy), L"Press 1 to start a one player game");
-            PushText(DrawCalls, V2(0.5f * Width, y + 3.0f * dy), L"Press 2 to start a two player game");
-            PushText(DrawCalls, V2(0.5f * Width, y + 4.0f * dy), L"  Press G to change graphic mode");
+            v2 Offset = v2_zero;
+            colour_index Colour = CI_Black;
+            size_index Size = SI_Medium;
+            
+            for (int Index = 0; Index < 2; ++Index)
+            {
+                PushText(DrawCalls, Offset + V2(0.5f * Width, y)            , L"Pong!", Size, Colour);
+                PushText(DrawCalls, Offset + V2(0.5f * Width, y + dy)       , L"-----", Size, Colour);
+                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 2.0f * dy), L"Press 0 to start a battle of the AI", Size, Colour);
+                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 3.0f * dy), L"Press 1 to start a one player game", Size, Colour);
+                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 4.0f * dy), L"Press 2 to start a two player game", Size, Colour);
+                PushText(DrawCalls, Offset + V2(0.5f * Width, y + 5.0f * dy), L"Press G to change graphic mode", Size, Colour);
+                
+                Offset += V2(4.0f, 3.0f);
+                Colour = static_cast<colour_index>(static_cast<int>(Colour) - 1);
+            }
         } break;
         
         case GameMode_Paused:
@@ -426,7 +437,7 @@ void ProcessInput(game_state *State)
     if (State->PressedKeys.count(0x47) > 0) // Key G, Change graphics mode
     {
         State->PressedKeys.erase(0x47);
-        State->UseRetroMode = !State->UseRetroMode;
+        State->RenderAsPrimitives = !State->RenderAsPrimitives;
     }
     
     if (State->GameMode == GameMode_Inactive)

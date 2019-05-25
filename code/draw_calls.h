@@ -31,7 +31,6 @@
 
 
 
-
 //
 // Draw call management
 //
@@ -71,20 +70,20 @@ void Shutdown(draw_calls *DrawCalls);
 
 //
 // Primitives
-void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
+void PushLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
 
-void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
-void PushPrimitiveTriangleFilled(draw_calls  *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
+void PushTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
+void PushTriangleFilled(draw_calls  *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour);
 
-void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour);
-void PushPrimitiveRectangleFilled(draw_calls  *DrawCalls, v3 P0, v3 P1, v4 Colour);
+void PushRectangleOutline(draw_calls *DrawCalls, v3 P0, v3   P1, v4 Colour);
+void PushRectangleFilled(draw_calls  *DrawCalls, v3 P0, v3   P1, v4 Colour);void PushRectangleFilled(draw_calls  *DrawCalls, v3  P, v2 Size, v4 Colour);
 
-void PushPrimitiveCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
-void PushPrimitiveCircleFilled(draw_calls  *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
+void PushCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
+void PushCircleFilled(draw_calls  *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount = 8);
 
 //
-// Draw calls, meshes
-void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text);
+// Draw calls, textured
+void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text, size_index Size = SI_Medium, colour_index Colour = CI_White);
 void PushTexturedMesh(draw_calls *DrawCalls, v3 P, mesh_index MIndex, texture_index TIndex, v2 Size = v2_one, v4 Colour = v4_one);
 
 
@@ -116,6 +115,8 @@ struct draw_call_text
     wchar_t *Text;
     v2 P;
     f32 Rotation;
+    colour_index ColourIndex;
+    size_index SizeIndex;
 };
 
 

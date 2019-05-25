@@ -659,7 +659,7 @@ void ProcessDrawCalls(dx_state *State, draw_calls *DrawCalls)
                 DrawCall;
                 
                 BeginDraw(&State->DWState);
-                DrawText(&State->DWState, DrawCall->P, DrawCall->Text);
+                DrawText(&State->DWState, DrawCall->P, DrawCall->Text, DrawCall->SizeIndex, DrawCall->ColourIndex);
                 EndDraw(&State->DWState);
             } break;
             

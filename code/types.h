@@ -56,6 +56,24 @@ typedef u32 b32;
 
 
 
+//
+// Enums
+//
+
+enum colour_index
+{
+    CI_White,
+    CI_Black,
+};
+
+enum size_index
+{
+    SI_Large,
+    SI_Medium,
+    SI_Small,
+};
+
+
 
 
 //

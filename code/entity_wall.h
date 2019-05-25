@@ -22,10 +22,10 @@
 // SOFTWARE.
 //
 
-#include "resources.h"
-#include "dynamics.h"
+//#include "resources.h"
+//#include "dynamics.h"
 #include "entity_pool.h"
-
+//#include "draw_calls.h"
 
 
 //
@@ -104,27 +104,5 @@ static void InitWalls(resources *Resources, dynamics_state *Dynamics, entity_poo
         entity *Entity = NewEntity(Pool);
         EntityPtr[Index] = Entity;
         SetupAsWall(Dynamics, Entity, MeshIndex, TextureIndex, V2(MidX, Y[Index]), Size);
-    }
-}
-
-
-
-
-//
-// Render
-//
-
-static void RenderAsWall(draw_calls *DrawCalls, entity *Entity, b32 Retro)
-{
-    if (Retro)
-    {
-        v2 HalfSize = 0.5f * Entity->Size;
-        v3 P0 = Entity->P - V3(HalfSize.x, HalfSize.y, 0.0f);
-        v3 P1 = Entity->P + V3(HalfSize.x, HalfSize.y, 0.0f);
-        PushPrimitiveRectangleFilled(DrawCalls, P0, P1, Entity->Colour);
-    }
-    else
-    {
-        PushTexturedMesh(DrawCalls, Entity->P, Entity->MeshIndex, Entity->TextureIndex, Entity->Scale, Entity->Colour);
     }
 }

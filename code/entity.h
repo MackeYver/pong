@@ -28,7 +28,8 @@
 #include "mathematics.h"
 #include "resources.h"
 #include "dynamics.h"
-struct draw_calls;
+#include "draw_calls.h"
+
 
 enum entity_type
 {
@@ -37,7 +38,7 @@ enum entity_type
     EntityType_Paddle,
     EntityType_Wall,
     
-    EntityType_Count,
+    EntityType_Count
 };
 
 
@@ -58,6 +59,12 @@ void Init(entity *Entity);
 void Shutdown(entity *Entity);
 
 void Update(dynamics_state *Dynamics, entity *Entity, f32 dt);
-void Render(draw_calls *DrawCalls, entity *Entity, b32 UseRetroMode);
+
+void Render(draw_calls *DrawCalls, entity *Entity);
+void RenderBody(draw_calls *DrawCalls, entity *Entity);
+
+#include "entity_ball.h"
+#include "entity_paddle.h"
+#include "entity_wall.h"
 
 #endif

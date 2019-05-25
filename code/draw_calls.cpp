@@ -88,7 +88,7 @@ struct vertex_PC
 };
 
 
-void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+void PushLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 {
     size_t Size = 2 * sizeof(vertex_PC);
     if (RemainingSize(&DrawCalls->PrimitiveLinesMemory) < Size)
@@ -107,15 +107,15 @@ void PushPrimitiveLine(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 }
 
 
-void PushPrimitiveTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
+void PushTriangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
 {
-    PushPrimitiveLine(DrawCalls, P0, P1, Colour);
-    PushPrimitiveLine(DrawCalls, P1, P2, Colour);
-    PushPrimitiveLine(DrawCalls, P2, P0, Colour);
+    PushLine(DrawCalls, P0, P1, Colour);
+    PushLine(DrawCalls, P1, P2, Colour);
+    PushLine(DrawCalls, P2, P0, Colour);
 }
 
 
-void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
+void PushTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 Colour)
 {
     size_t Size = 3 * sizeof(vertex_PC);
     if (RemainingSize(&DrawCalls->PrimitiveTrianglesMemory) < Size)
@@ -138,29 +138,39 @@ void PushPrimitiveTriangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v3 P2, v4 
 }
 
 
-void PushPrimitiveRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+void PushRectangleOutline(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 {
     v3 P01 = V3(P1.x, P0.y, 0.5f * (P0.z + P1.z));
     v3 P10 = V3(P0.x, P1.y, 0.5f * (P0.z + P1.z));
     
-    PushPrimitiveLine(DrawCalls, P0, P01, Colour);
-    PushPrimitiveLine(DrawCalls, P01, P1, Colour);
-    PushPrimitiveLine(DrawCalls, P1, P10, Colour);
-    PushPrimitiveLine(DrawCalls, P10, P0, Colour);
+    PushLine(DrawCalls, P0, P01, Colour);
+    PushLine(DrawCalls, P01, P1, Colour);
+    PushLine(DrawCalls, P1, P10, Colour);
+    PushLine(DrawCalls, P10, P0, Colour);
 }
 
 
-void PushPrimitiveRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
+void PushRectangleFilled(draw_calls *DrawCalls, v3 P0, v3 P1, v4 Colour)
 {
     v3 P01 = V3(P1.x, P0.y, 0.5f * (P0.z + P1.z));
     v3 P10 = V3(P0.x, P1.y, 0.5f * (P0.z + P1.z));
     
-    PushPrimitiveTriangleFilled(DrawCalls, P0, P01, P1, Colour);
-    PushPrimitiveTriangleFilled(DrawCalls, P0, P1, P10, Colour);
+    PushTriangleFilled(DrawCalls, P0, P01, P1, Colour);
+    PushTriangleFilled(DrawCalls, P0, P1, P10, Colour);
 }
 
 
-void PushPrimitiveCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount)
+void PushRectangleFilled(draw_calls *DrawCalls, v3 P, v2 Size, v4 Colour)
+{
+    v3 HalfSize = 0.5f * V3(Size, 0.0f);
+    v3 P0 = P - HalfSize;
+    v3 P1 = P + HalfSize;
+    
+    PushRectangleFilled(DrawCalls, P0, P1, Colour);
+}
+
+
+void PushCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount)
 {
     f32 Theta = Tau32 / (f32)SliceCount;
     f32 Angle = 0.0f;
@@ -172,14 +182,14 @@ void PushPrimitiveCircleOutline(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colo
         Angle += Theta;
         v3 P1 = P + Radius * V3(Cos(Angle), Sin(Angle), 0.0f);
         
-        PushPrimitiveLine(DrawCalls, P0, P1, Colour);
+        PushLine(DrawCalls, P0, P1, Colour);
         
         P0 = P1;
     }
 }
 
 
-void PushPrimitiveCircleFilled(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount)
+void PushCircleFilled(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colour, u32 SliceCount)
 {
     f32 Theta = Tau32 / (f32)SliceCount;
     f32 Angle = 0.0f;
@@ -191,7 +201,7 @@ void PushPrimitiveCircleFilled(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colou
         Angle += Theta;
         v3 P1 = P + Radius * V3(Cos(Angle), Sin(Angle), 0.0f);
         
-        PushPrimitiveTriangleFilled(DrawCalls, P, P0, P1, Colour);
+        PushTriangleFilled(DrawCalls, P, P0, P1, Colour);
         
         P0 = P1;
     }
@@ -204,7 +214,7 @@ void PushPrimitiveCircleFilled(draw_calls *DrawCalls, v3 P, f32 Radius, v4 Colou
 // Draw calls
 //
 
-void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
+void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text, size_index SizeIndex, colour_index ColourIndex)
 {
     size_t DrawCallSize = sizeof(draw_call_text);
     size_t TextSize = (wcslen(Text) + 1) * sizeof(wchar_t);
@@ -217,6 +227,8 @@ void PushText(draw_calls *DrawCalls, v2 P, wchar_t const *Text)
     DrawCall->Header.Type = DrawCallType_Text;
     
     DrawCall->P = P;
+    DrawCall->ColourIndex = ColourIndex;
+    DrawCall->SizeIndex = SizeIndex;
     
     // We store the text in memory, after the draw call struct
     DrawCall->Text = reinterpret_cast<wchar_t *>(DrawCall + DrawCallSize); 

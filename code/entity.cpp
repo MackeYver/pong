@@ -25,10 +25,6 @@
 #include "entity.h"
 #include "draw_calls.h"
 
-#include "entity_ball.h"
-#include "entity_wall.h"
-#include "entity_paddle.h"
-
 #ifdef DEBUG
 #include <stdio.h>
 #else
@@ -76,28 +72,28 @@ void Update(dynamics_state *Dynamics, entity *Entity, f32 dt)
 // Render
 //
 
-void Render(draw_calls *DrawCalls, entity *Entity, b32 UseRetroMode)
+void Render(draw_calls *DrawCalls, entity *Entity)
+{
+    PushTexturedMesh(DrawCalls, Entity->P, Entity->MeshIndex, Entity->TextureIndex, Entity->Scale, Entity->Colour);
+}
+
+
+void RenderBody(draw_calls *DrawCalls, entity *Entity)
 {
     switch (Entity->Type)
     {
+        case EntityType_Null:
+        {
+        } break;
+        
         case EntityType_Ball:
         {
-            RenderAsBall(DrawCalls, Entity, UseRetroMode);
-        } break;
-        
-        case EntityType_Paddle:
-        {
-            RenderAsPaddle(DrawCalls, Entity, UseRetroMode);
-        } break;
-        
-        case EntityType_Wall:
-        {
-            RenderAsWall(DrawCalls, Entity, UseRetroMode);
+            PushCircleFilled(DrawCalls, Entity->P, 0.5f * Entity->Size.x, Entity->Colour);
         } break;
         
         default:
         {
-            printf("%s: Tried to render unknown entity type!\n", __FILE__);
+            PushRectangleFilled(DrawCalls, Entity->P, Entity->Size, Entity->Colour);
         } break;
     }
 }

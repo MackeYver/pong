@@ -23,8 +23,8 @@
 //
 
 #include "entity.h"
-#include "dynamics.h"
-#include "resources.h"
+//#include "dynamics.h"
+//#include "resources.h"
 #include "entity_pool.h"
 
 
@@ -94,17 +94,4 @@ static void SetupAsBall(resources *Resources, dynamics_state *Dynamics, entity_p
     texture_index TextureIndex = LoadBMP(Resources, "data\\ball.bmp");
     assert(TextureIndex >= 0);
     Entity->TextureIndex = TextureIndex;
-}
-
-
-static void RenderAsBall(draw_calls *DrawCalls, entity *Entity, b32 Retro)
-{
-    if (Retro)
-    {
-        PushPrimitiveCircleFilled(DrawCalls, Entity->P, 12.5f, Entity->Colour);
-    }
-    else
-    {
-        PushTexturedMesh(DrawCalls, Entity->P, Entity->MeshIndex, Entity->TextureIndex, Entity->Scale, Entity->Colour);
-    }
 }

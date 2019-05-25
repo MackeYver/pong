@@ -138,7 +138,11 @@ b32 Init(dw_state *State, dx_state *DXState)
     }
     DeviceContext->SetTarget(State->RenderTarget);
     
-    Result = DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White, 1.0f), &State->Brush);
+    
+    
+    //
+    // Brushes
+    Result = DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White, 1.0f), &State->Brushes[0]);
     if (FAILED(Result))
     {
         State->RenderTarget->Release();
@@ -152,17 +156,10 @@ b32 Init(dw_state *State, dx_state *DXState)
         return false;
     }
     
-    Result = DWriteFactory->CreateTextFormat(L"Bahnschrift", //L"Microsoft New Tai Lue",
-                                             nullptr,
-                                             DWRITE_FONT_WEIGHT_NORMAL,
-                                             DWRITE_FONT_STYLE_NORMAL,
-                                             DWRITE_FONT_STRETCH_NORMAL,
-                                             96.0f / 2.0f,
-                                             L"en-GB",
-                                             &State->TextFormat);
+    Result = DeviceContext->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black, 1.0f), &State->Brushes[1]);
     if (FAILED(Result))
     {
-        State->Brush->Release();
+        State->Brushes[0]->Release();
         State->RenderTarget->Release();
         D2DBuffer->Release();
         State->DeviceContext->Release();
@@ -170,12 +167,102 @@ b32 Init(dw_state *State, dx_state *DXState)
         DXGIDevice->Release();
         D2DFactory->Release();
         DWriteFactory->Release();
-        printf("Failed to create the D2DTextFormat!\n");
+        printf("Failed to create the D2DBrush!\n");
         return false;
     }
     
-    State->TextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
-    State->TextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+    
+    
+    //
+    // Text format
+    {
+        //
+        // Small
+        Result = DWriteFactory->CreateTextFormat(L"Bahnschrift", //L"Microsoft New Tai Lue",
+                                                 nullptr,
+                                                 DWRITE_FONT_WEIGHT_NORMAL,
+                                                 DWRITE_FONT_STYLE_NORMAL,
+                                                 DWRITE_FONT_STRETCH_NORMAL,
+                                                 96.0f / 4.0f,
+                                                 L"en-GB",
+                                                 &State->TextFormats[0]);
+        if (FAILED(Result))
+        {
+            State->Brushes[0]->Release();
+            State->Brushes[1]->Release();
+            State->RenderTarget->Release();
+            D2DBuffer->Release();
+            State->DeviceContext->Release();
+            State->Device->Release();
+            DXGIDevice->Release();
+            D2DFactory->Release();
+            DWriteFactory->Release();
+            printf("Failed to create the D2DTextFormat!\n");
+            return false;
+        }
+        
+        State->TextFormats[0]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+        State->TextFormats[0]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+        
+        //
+        // Medium
+        Result = DWriteFactory->CreateTextFormat(L"Bahnschrift", //L"Microsoft New Tai Lue",
+                                                 nullptr,
+                                                 DWRITE_FONT_WEIGHT_NORMAL,
+                                                 DWRITE_FONT_STYLE_NORMAL,
+                                                 DWRITE_FONT_STRETCH_NORMAL,
+                                                 96.0f / 3.0f,
+                                                 L"en-GB",
+                                                 &State->TextFormats[1]);
+        if (FAILED(Result))
+        {
+            State->Brushes[0]->Release();
+            State->Brushes[1]->Release();
+            State->TextFormats[0]->Release();
+            State->RenderTarget->Release();
+            D2DBuffer->Release();
+            State->DeviceContext->Release();
+            State->Device->Release();
+            DXGIDevice->Release();
+            D2DFactory->Release();
+            DWriteFactory->Release();
+            printf("Failed to create the D2DTextFormat!\n");
+            return false;
+        }
+        
+        State->TextFormats[1]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+        State->TextFormats[1]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+        
+        //
+        // Large
+        Result = DWriteFactory->CreateTextFormat(L"Bahnschrift", //L"Microsoft New Tai Lue",
+                                                 nullptr,
+                                                 DWRITE_FONT_WEIGHT_NORMAL,
+                                                 DWRITE_FONT_STYLE_NORMAL,
+                                                 DWRITE_FONT_STRETCH_NORMAL,
+                                                 96.0f / 2.0f,
+                                                 L"en-GB",
+                                                 &State->TextFormats[2]);
+        if (FAILED(Result))
+        {
+            State->Brushes[0]->Release();
+            State->Brushes[1]->Release();
+            State->TextFormats[0]->Release();
+            State->TextFormats[1]->Release();
+            State->RenderTarget->Release();
+            D2DBuffer->Release();
+            State->DeviceContext->Release();
+            State->Device->Release();
+            DXGIDevice->Release();
+            D2DFactory->Release();
+            DWriteFactory->Release();
+            printf("Failed to create the D2DTextFormat!\n");
+            return false;
+        }
+        
+        State->TextFormats[2]->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+        State->TextFormats[2]->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+    }
     
     D2DBuffer->Release();
     DXGIDevice->Release();
@@ -190,8 +277,16 @@ b32 Init(dw_state *State, dx_state *DXState)
 void Shutdown(dw_state *State)
 {
     assert(State);
-    State->TextFormat ? State->TextFormat->Release() : 0;
-    State->Brush ? State->Brush->Release() : 0;
+    for (int Index = 0; Index < 3; ++Index)
+    {
+        State->TextFormats[Index] ? State->TextFormats[Index]->Release() : 0;
+    }
+    
+    for (int Index = 0; Index < 2; ++Index)
+    {
+        State->Brushes[Index] ? State->Brushes[Index]->Release() : 0;
+    }
+    
     State->RenderTarget ? State->RenderTarget->Release() : 0;
     State->DeviceContext? State->DeviceContext->Release() : 0;
     State->Device ? State->Device->Release() : 0;
@@ -219,8 +314,7 @@ HRESULT EndDraw(dw_state *State)
     return Result;
 }
 
-
-void DrawText(dw_state *State, v2 P, wchar_t const *String)
+void DrawText(dw_state *State, v2 P, wchar_t const *String, size_index Size, colour_index Colour)
 {
     assert(State && State->DeviceContext);
     assert(String);
@@ -234,9 +328,9 @@ void DrawText(dw_state *State, v2 P, wchar_t const *String)
     
     State->DeviceContext->DrawText(String,
                                    wcslen(String),
-                                   State->TextFormat,
+                                   State->TextFormats[static_cast<int>(Size)],
                                    &LayoutRect,
-                                   State->Brush,
+                                   State->Brushes[static_cast<int>(Colour)],
                                    D2D1_DRAW_TEXT_OPTIONS_NONE,
                                    DWRITE_MEASURING_MODE_NATURAL);
 }

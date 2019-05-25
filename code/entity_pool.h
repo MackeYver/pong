@@ -27,8 +27,8 @@
 
 #include "memory_arena.h"
 #include "mathematics.h"
-#include "entity.h"
 
+struct entity;
 struct draw_calls;
 struct dynamics_state;
 struct free_node;
@@ -49,7 +49,7 @@ entity *NewEntity(entity_pool *Pool);
 void RemoveEntity(entity_pool *Pool, entity *Entity);
 
 void UpdateAll(dynamics_state *Dynamics, entity_pool *Pool, f32 dt);
-void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 RetroMode);
+void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 RenderAsPrimitives);
 
 
 #endif
