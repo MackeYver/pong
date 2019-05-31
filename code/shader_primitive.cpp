@@ -51,7 +51,7 @@ b32 Init(ID3D11Device *Device, shader_primitive *Shader)
     u8 *Data = nullptr;
     size_t DataSize = 0;
     
-    win32_ReadFile("build\\shaders\\primitives_vs.cso", &Data, &DataSize);
+    win32_ReadFile("data\\shaders\\primitives_vs.cso", &Data, &DataSize);
     assert(Data);
     assert(DataSize > 0);
     
@@ -92,7 +92,7 @@ b32 Init(ID3D11Device *Device, shader_primitive *Shader)
     // Pixel shader
     //
     
-    win32_ReadFile("build\\shaders\\primitives_ps.cso", &Data, &DataSize);
+    win32_ReadFile("data\\shaders\\primitives_ps.cso", &Data, &DataSize);
     assert(Data);
     assert(DataSize > 0);
     

@@ -65,6 +65,7 @@ void Shutdown(dx_state *State)
     DX_RELEASE(RenderTargetTexture);
     DX_SHUTDOWN(ShaderPrimitive);
     DX_SHUTDOWN(ShaderTextured);
+	DX_SHUTDOWN(ShaderFinal);
     DX_RELEASE(BackbufferView);
     DX_RELEASE(Backbuffer);
     DX_RELEASE(SwapChain);

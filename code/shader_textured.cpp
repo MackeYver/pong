@@ -53,7 +53,7 @@ b32 Init(ID3D11Device *Device, shader_textured *Shader)
     u8 *Data = nullptr;
     size_t DataSize = 0;
     
-    win32_ReadFile("build\\shaders\\textured_vs.cso", &Data, &DataSize);
+    win32_ReadFile("data\\shaders\\textured_vs.cso", &Data, &DataSize);
     assert(Data);
     assert(DataSize > 0);
     
@@ -98,7 +98,7 @@ b32 Init(ID3D11Device *Device, shader_textured *Shader)
     // Pixel shader
     //
     
-    win32_ReadFile("build\\shaders\\textured_ps.cso", &Data, &DataSize);
+    win32_ReadFile("data\\shaders\\textured_ps.cso", &Data, &DataSize);
     assert(Data);
     assert(DataSize > 0);
     

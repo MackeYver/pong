@@ -8,8 +8,8 @@ cls
 )
 
 
-IF NOT EXIST ..\..\build\shaders mkdir ..\..\build\shaders
-PUSHD ..\..\build\shaders
+IF NOT EXIST ..\..\data\shaders mkdir ..\..\data\shaders
+PUSHD ..\..\data\shaders
 
 IF EXIST vprimitive.cso DEL /Q vprimitive.cso
 IF EXIST pprimitive.cso DEL /Q pprimitive.cso
