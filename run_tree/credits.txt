@@ -1,0 +1,8 @@
+Programming & "art"
+*******************
+Marcus Larsson
+
+Audio
+*****
+theme.wav, original name "Take a Chance" created by Kevin MacLeod.
+Rest of the wavs was created in Bfxr (https://www.bfxr.net/).

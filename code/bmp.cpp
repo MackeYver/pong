@@ -37,7 +37,7 @@
 
 
 
-b32 ParseBMP(u8 *Data, size_t DataSize, bmp *Output)
+b32 ParseBMP(u8 *Data, u32 DataSize, bmp *Output)
 {
     b32 Result = false;
     

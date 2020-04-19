@@ -111,7 +111,7 @@ void Init(entity_pool *Pool)
 
 void Shutdown(entity_pool *Pool)
 {
-    u32 Capacity = Pool->Memory.Size / sizeof(entity);
+    u32 Capacity = static_cast<u32>(Pool->Memory.Size) / sizeof(entity);
     for (u32 Index = 0; Index < Capacity; ++Index)
     {
         entity *Entity = &reinterpret_cast<entity *>(Pool->Memory.Ptr)[Index];
@@ -158,7 +158,7 @@ void RemoveEntity(entity_pool *Pool, entity *Entity)
 
 void UpdateAll(dynamics_state *Dynamics, entity_pool *Pool, f32 dt)
 {
-    u32 Capacity = Pool->Memory.Size / sizeof(entity);
+    u32 Capacity = static_cast<u32>(Pool->Memory.Size) / sizeof(entity);
     for (u32 Index = 0; Index < Capacity; ++Index)
     {
         entity *Entity = &reinterpret_cast<entity *>(Pool->Memory.Ptr)[Index];
@@ -175,7 +175,7 @@ void UpdateAll(dynamics_state *Dynamics, entity_pool *Pool, f32 dt)
 
 void RenderAll(draw_calls *DrawCalls, entity_pool *Pool, b32 RenderAsPrimitives)
 {
-    u32 Capacity = Pool->Memory.Size / sizeof(entity);
+    u32 Capacity = static_cast<u32>(Pool->Memory.Size) / sizeof(entity);
     for (u32 Index = 0; Index < Capacity; ++Index)
     {
         entity *Entity = &reinterpret_cast<entity *>(Pool->Memory.Ptr)[Index];

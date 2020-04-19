@@ -73,11 +73,11 @@ struct bmp
 {
     dib_header Header = {};
     u8 *Data = nullptr;
-    size_t RowSize = 0;
-    size_t DataSize = 0;
+    u32 RowSize = 0;
+    u32 DataSize = 0;
 };
 
-b32 ParseBMP(u8 *Data, size_t DataSize, bmp *Output);
+b32 ParseBMP(u8 *Data, u32 DataSize, bmp *Output);
 void Free(bmp *Bmp);
 
 

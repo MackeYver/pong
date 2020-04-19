@@ -327,7 +327,7 @@ void DrawText(dw_state *State, v2 P, wchar_t const *String, size_index Size, col
     LayoutRect.right  = P.x + Offset.x;
     
     State->DeviceContext->DrawText(String,
-                                   wcslen(String),
+                                   static_cast<u32>(wcslen(String)),
                                    State->TextFormats[static_cast<int>(Size)],
                                    &LayoutRect,
                                    State->Brushes[static_cast<int>(Colour)],

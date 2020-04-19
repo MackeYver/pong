@@ -42,12 +42,12 @@ struct dx_buffer
     size_t Size = 0;
 };
 
-b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
-b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer);
+b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, u32 DataSize, u32 ElementSize, dx_buffer *Buffer);
+b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, u32 DataSize, u32 ElementSize, dx_buffer *Buffer);
+b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, u32 DataSize, u32 ElementSize, dx_buffer *Buffer);
 
-b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, size_t NewSize);
-void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, size_t DataSize);
+b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, u32 NewSize);
+void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, u32 DataSize);
 
 void Free(dx_buffer *Buffer);
 

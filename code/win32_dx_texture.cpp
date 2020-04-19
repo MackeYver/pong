@@ -27,7 +27,7 @@
 #include "bmp.h"
 
 
-b32 CreateTexture(ID3D11Device *Device, u32 Width, u32 Height, void *Data, size_t RowSize, dx_texture *Output)
+b32 CreateTexture(ID3D11Device *Device, u32 Width, u32 Height, void *Data, u32 RowSize, dx_texture *Output)
 {
     //
     // Texture
@@ -113,7 +113,7 @@ s32 CreateTexture(void *DXState, bmp *BMP)
         else
         {
             State->Textures.push_back(T);
-            Result = State->Textures.size() - 1;
+            Result = static_cast<s32>(State->Textures.size()) - 1;
         }
     }
     

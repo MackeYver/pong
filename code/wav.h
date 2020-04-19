@@ -60,7 +60,7 @@ struct wav_format
 struct wav
 {
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     wav_type Type = WavType_Unknown;
     wav_format Format;
 };

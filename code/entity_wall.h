@@ -96,7 +96,7 @@ static void InitWalls(resources *Resources, dynamics_state *Dynamics, entity_poo
     mesh_index MeshIndex = CreateWallMesh(Resources, Size);
     assert(MeshIndex >= 0);
     
-    texture_index TextureIndex = LoadBMP(Resources, "data\\brick.bmp");
+    texture_index TextureIndex = LoadBMP(Resources, "data\\bitmaps\\brick.bmp");
     assert(TextureIndex >= 0);
     
     for (int Index = 0; Index < 2; ++Index)

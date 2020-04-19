@@ -85,7 +85,7 @@ texture_index LoadBMP(resources *Resources, char const *PathAndFileName)
     texture_index Result = -1;
     
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     b32 Succeeded = Resources->Platform.LoadEntireFile(PathAndFileName, &Data, &DataSize);
     
     bmp_resource BD;
@@ -128,7 +128,7 @@ voice_index LoadWAV(resources *Resources, char const *PathAndFileName)
     voice_index Result = -1;
     
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     b32 Succeeded = Resources->Platform.LoadEntireFile(PathAndFileName, &Data, &DataSize);
     
     wav_resource WD;
@@ -148,7 +148,8 @@ voice_index LoadWAV(resources *Resources, char const *PathAndFileName)
         if (VoiceIndex >= 0)
         {
             Resources->Wavs.push_back(WD);
-            Resources->Platform.SetWavResourceIndex(VoiceIndex, Resources->Wavs.size() - 1);
+            s32 resource_index = static_cast<s32>(Resources->Wavs.size()) - 1;
+            Resources->Platform.SetWavResourceIndex(VoiceIndex, resource_index);
             Result = VoiceIndex;
         }
         else
@@ -185,7 +186,7 @@ mesh_index LoadPLY(resources *Resources, char const *PathAndFilename)
     mesh_index Result = -1;
     
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     b32 Succeeded = Resources->Platform.LoadEntireFile(PathAndFilename, &Data, &DataSize);
     
     mesh_resource MD;
@@ -225,7 +226,7 @@ mesh_index LoadMesh(resources *Resources, v3 *Positions, v2 *UVs, u32 VertexCoun
     
     mesh_resource MD;
     
-    size_t Size = sizeof(v3) * VertexCount;
+    u32 Size = sizeof(v3) * VertexCount;
     MD.Mesh.Positions = static_cast<v3 *>(malloc(Size));
     assert(MD.Mesh.Positions);
     memcpy(MD.Mesh.Positions, Positions, Size);

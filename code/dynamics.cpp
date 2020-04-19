@@ -103,7 +103,7 @@ body *NewRectangleBody(dynamics_state *State, v2 Size, void *UserData)
 {
     assert(State);
     
-    u32 Index = State->Bodies.size();
+    u32 Index = static_cast<u32>(State->Bodies.size());
     State->Bodies.emplace_back(body());
     body *Result = &State->Bodies.back();
     
@@ -120,7 +120,7 @@ body *NewCircleBody(dynamics_state *State, f32 Radius, void *UserData)
 {
     assert(State);
     
-    u32 Index = State->Bodies.size();
+    u32 Index = static_cast<u32>(State->Bodies.size());
     State->Bodies.emplace_back(body());
     body *Result = &State->Bodies.back();
     
@@ -155,8 +155,8 @@ body_index GetBodyIndex(dynamics_state *State, body *Body)
             {
                 if (&State->Bodies[Index] == Body)
                 {
-                    Result = Index;
-                    Body->Shape.BodyIndex = Index;
+                    Result = static_cast<s32>(Index);
+                    Body->Shape.BodyIndex = Result;
                     break;
                 }
             }
@@ -180,11 +180,9 @@ void SetP(dynamics_state *State, body_index BodyIndex, v2 Po)
 
 void DetectCollisions(dynamics_state *State, std::vector<collision_info>& Output)
 {
-    typedef std::vector<body>::size_type size;
-    
-    for (size IndexA = 0; IndexA < 5; ++IndexA)
+    for (u32 IndexA = 0; IndexA < 5; ++IndexA)
     {
-        for (size IndexB = IndexA + 1; IndexB < 5; ++IndexB)
+        for (u32 IndexB = IndexA + 1; IndexB < 5; ++IndexB)
         {
             body *Body[2];
             Body[0] = &State->Bodies[IndexA];

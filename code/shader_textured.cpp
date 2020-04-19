@@ -51,7 +51,7 @@ b32 Init(ID3D11Device *Device, shader_textured *Shader)
     //
     
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     
     win32_ReadFile("data\\shaders\\textured_vs.cso", &Data, &DataSize);
     assert(Data);
@@ -156,7 +156,7 @@ b32 Init(ID3D11Device *Device, shader_textured *Shader)
     //
     
     {
-        size_t Size = sizeof(shader_textured::constants);
+        u32 Size = sizeof(shader_textured::constants);
         assert(Size % 16 == 0);
         
         b32 bResult = CreateConstantBuffer(Device, &Shader->Constants, Size, 0, &Shader->ConstantsBuffer);
@@ -259,8 +259,8 @@ void DrawMesh(ID3D11DeviceContext *DC, shader_textured *Shader, dx_mesh *Mesh, d
 {
     //
     // Vertex buffers
-    size_t Stride = sizeof(v3);
-    size_t Offset = 0;
+    u32 Stride = sizeof(v3);
+    u32 Offset = 0;
     DC->IASetVertexBuffers(0, 1, &Mesh->Positions, &Stride, &Offset); 
     
     Stride = sizeof(v2);

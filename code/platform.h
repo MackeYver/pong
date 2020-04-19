@@ -37,7 +37,7 @@ struct mesh;
 // function pointers to platform specific implementations of render- and audio-systems
 struct platform
 {
-    b32 (*LoadEntireFile)(char const *PathAndFilename, u8 **OutputData, size_t *OutputDataSize);
+    b32 (*LoadEntireFile)(char const *PathAndFilename, u8 **OutputData, u32 *OutputDataSize);
     
     
     //

@@ -87,19 +87,19 @@ void Init(game_state *State)
     //
     // Game audio
     {
-        voice_index VIndex = LoadWAV(&State->Resources, "data\\theme.wav");
+        voice_index VIndex = LoadWAV(&State->Resources, "data\\audio\\theme.wav");
         assert(VIndex >= 0);
         State->Audio_Theme = VIndex;
         
-        VIndex = LoadWAV(&State->Resources, "data\\score.wav");
+        VIndex = LoadWAV(&State->Resources, "data\\audio\\score.wav");
         assert(VIndex >= 0);
         State->Audio_Score = VIndex;
         
-        VIndex = LoadWAV(&State->Resources, "data\\wall_bounce.wav");
+        VIndex = LoadWAV(&State->Resources, "data\\audio\\wall_bounce.wav");
         assert(VIndex >= 0);
         State->Audio_WallBounce = VIndex;
         
-        VIndex = LoadWAV(&State->Resources, "data\\paddle_bounce.wav");
+        VIndex = LoadWAV(&State->Resources, "data\\audio\\paddle_bounce.wav");
         assert(VIndex >= 0);
         State->Audio_PaddleBounce = VIndex;
     }
@@ -109,7 +109,7 @@ void Init(game_state *State)
     // Background texture and mesh
     {
         // Texture
-        texture_index TIndex = LoadBMP(&State->Resources, "data\\background.bmp");
+        texture_index TIndex = LoadBMP(&State->Resources, "data\\bitmaps\\background.bmp");
         assert(TIndex >= 0);
         State->BackgroundTexture = TIndex;
         

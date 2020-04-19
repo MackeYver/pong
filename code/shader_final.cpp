@@ -51,7 +51,7 @@ b32 Init(ID3D11Device *Device, shader_final *Shader)
     //
     // vertex shader
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     win32_ReadFile("data\\shaders\\fullscreen_texture_vs.cso", &Data, &DataSize);
     assert(Data);
     assert(DataSize > 0);
@@ -158,8 +158,8 @@ b32 Init(ID3D11Device *Device, shader_final *Shader)
         };
         
         u32 VertexCount = 6;
-        size_t VertexSize = sizeof(pt);
-        size_t Size = VertexCount * VertexSize;
+        u32 VertexSize = sizeof(pt);
+        u32 Size = VertexCount * VertexSize;
         b32 bResult = CreateImmutableVertexBuffer(Device, Vertices, Size, VertexSize, &Shader->VertexBuffer);
         if (!bResult)
         {
@@ -222,8 +222,8 @@ void DrawTextureToScreen(ID3D11DeviceContext *DC, shader_final *Shader, dx_textu
 {
     //
     // Vertex buffers
-    size_t Stride = sizeof(v3) + sizeof(v2);
-    size_t Offset = 0;
+    u32 Stride = sizeof(v3) + sizeof(v2);
+    u32 Offset = 0;
     DC->IASetVertexBuffers(0, 1, &Shader->VertexBuffer.Ptr, &Stride, &Offset); 
     
     //

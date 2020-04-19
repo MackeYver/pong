@@ -105,7 +105,7 @@ voice_index CreateVoice(void *X, wav *WAV)
     if (WAV)
     {
         xaudio_voice NewVoice;
-        std::vector<xaudio_voice>::size_type VoiceIndex = State->Voices.size();
+        u32 VoiceIndex = static_cast<u32>(State->Voices.size());
         State->Voices.push_back(NewVoice);
         xaudio_voice *VoicePtr = &State->Voices[VoiceIndex];
         

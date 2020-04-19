@@ -46,7 +46,7 @@
 //
 // File reading using the win32 API.
 //
-b32 win32_ReadFile(char const *PathAndName, u8 **Data, size_t *DataSize)
+b32 win32_ReadFile(char const *PathAndName, u8 **Data, u32 *DataSize)
 {
     assert(PathAndName);
     assert(Data);
@@ -72,7 +72,7 @@ b32 win32_ReadFile(char const *PathAndName, u8 **Data, size_t *DataSize)
     GetFileSizeEx(File, &FileSize);
     assert(FileSize.QuadPart > 0);
     
-    *Data = static_cast<u8 *>(malloc(static_cast<size_t>(FileSize.QuadPart)));
+    *Data = static_cast<u8 *>(malloc(FileSize.QuadPart));
     assert(Data);
     
     DWORD BytesRead = 0;
@@ -94,7 +94,7 @@ b32 win32_ReadFile(char const *PathAndName, u8 **Data, size_t *DataSize)
         return false;
     }
     
-    *DataSize = static_cast<size_t>(FileSize.QuadPart);
+    *DataSize = static_cast<u32>(FileSize.QuadPart);
     
     CloseHandle(File);
     

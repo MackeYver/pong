@@ -49,7 +49,7 @@ b32 Init(ID3D11Device *Device, shader_primitive *Shader)
     //
     
     u8 *Data = nullptr;
-    size_t DataSize = 0;
+    u32 DataSize = 0;
     
     win32_ReadFile("data\\shaders\\primitives_vs.cso", &Data, &DataSize);
     assert(Data);
@@ -119,7 +119,7 @@ b32 Init(ID3D11Device *Device, shader_primitive *Shader)
     //
     
     {
-        size_t Size = sizeof(shader_primitive::constants);
+        u32 Size = sizeof(shader_primitive::constants);
         assert(Size % 16 == 0);
         
         b32 bResult = CreateConstantBuffer(Device, &Shader->Constants, Size, 0, &Shader->ConstantsBuffer);
@@ -141,8 +141,8 @@ b32 Init(ID3D11Device *Device, shader_primitive *Shader)
     //
     
     {
-        size_t VertexSize = sizeof(shader_primitive::vs_input);
-        size_t Size = 1 << 10; // @debug
+        u32 VertexSize = sizeof(shader_primitive::vs_input);
+        u32 Size = 1 << 10; // @debug
         b32 bResult = CreateDynamicVertexBuffer(Device, nullptr, Size, VertexSize, &Shader->VertexBuffer);
         if (!bResult)
         {
@@ -230,17 +230,17 @@ void DrawPrimitives(ID3D11Device *Device, ID3D11DeviceContext *DC, shader_primit
     // Upload data to the GPU
     if (Shader->VertexBuffer.Size < Memory->Used)
     {
-        b32 Result = ResizeBuffer(Device, &Shader->VertexBuffer, Memory->Used);
+        b32 Result = ResizeBuffer(Device, &Shader->VertexBuffer, static_cast<u32>(Memory->Used));
         assert(Result);
     }
     
-    UpdateBuffer(DC, &Shader->VertexBuffer, static_cast<void *>(Memory->Ptr), Memory->Used);
+    UpdateBuffer(DC, &Shader->VertexBuffer, static_cast<void *>(Memory->Ptr), static_cast<u32>(Memory->Used));
     
     
     //
     // Vertex buffers
-    size_t Stride = sizeof(shader_primitive::vs_input);
-    size_t Offset = 0;
+    u32 Stride = sizeof(shader_primitive::vs_input);
+    u32 Offset = 0;
     DC->IASetVertexBuffers(0, 1, &Shader->VertexBuffer.Ptr, &Stride, &Offset); 
     
     

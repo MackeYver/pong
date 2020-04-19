@@ -91,7 +91,7 @@ static void SetupAsBall(resources *Resources, dynamics_state *Dynamics, entity_p
     Entity->BodyIndex = GetBodyIndex(Dynamics, Body);
     Entity->MeshIndex = MeshIndex;
     
-    texture_index TextureIndex = LoadBMP(Resources, "data\\ball.bmp");
+    texture_index TextureIndex = LoadBMP(Resources, "data\\bitmaps\\ball.bmp");
     assert(TextureIndex >= 0);
     Entity->TextureIndex = TextureIndex;
 }

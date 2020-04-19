@@ -101,12 +101,16 @@ IF %errorlevel% NEQ 0 (
 )
 
 ECHO Embedding manifest...
-mt.exe -nologo -manifest "../data/a.manifest" -outputresource:"pong.exe;#1"
+mt.exe -nologo -manifest "manifest/a.manifest" -outputresource:"pong.exe;#1"
 
 IF %errorlevel% NEQ 0 (
   popd
   EXIT /b %errorlevel%
 )
+
+REM Move the resulting exe to the run_tree
+IF NOT EXIST ..\run_tree mkdir ..\run_tree
+move pong.exe ..\run_tree
 
 ECHO All done.
 POPD

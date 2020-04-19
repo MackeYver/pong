@@ -38,7 +38,7 @@
 //
 
 b32 CreateBuffer(ID3D11Device *Device, 
-                 void *Data, size_t DataSize, size_t ElementSize, 
+                 void *Data, u32 DataSize, u32 ElementSize, 
                  D3D11_USAGE Usage,
                  D3D11_BIND_FLAG BindFlags,
                  unsigned int CPUAccess,
@@ -84,7 +84,7 @@ b32 CreateBuffer(ID3D11Device *Device,
 }
 
 
-b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer)
+b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, u32 DataSize, u32 ElementSize, dx_buffer *Buffer)
 {
     b32 Result = false;
     Result = CreateBuffer(Device, Data, DataSize, ElementSize, 
@@ -96,7 +96,7 @@ b32 CreateImmutableVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSiz
 }
 
 
-b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer)
+b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, u32 DataSize, u32 ElementSize, dx_buffer *Buffer)
 {
     b32 Result = false;
     Result = CreateBuffer(Device, Data, DataSize, ElementSize, 
@@ -108,7 +108,7 @@ b32 CreateDynamicVertexBuffer(ID3D11Device *Device, void *Data, size_t DataSize,
 }
 
 
-b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size_t ElementSize, dx_buffer *Buffer)
+b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, u32 DataSize, u32 ElementSize, dx_buffer *Buffer)
 {
     b32 Result = false;
     Result = CreateBuffer(Device, Data, DataSize, ElementSize, 
@@ -126,7 +126,7 @@ b32 CreateConstantBuffer(ID3D11Device *Device, void *Data, size_t DataSize, size
 // Update
 //
 
-void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, size_t DataSize)
+void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *Data, u32 DataSize)
 {
 #ifdef DEBUG
     assert(Buffer);
@@ -154,7 +154,7 @@ void UpdateBuffer(ID3D11DeviceContext *DeviceContext, dx_buffer *Buffer, void *D
 }
 
 
-b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, size_t NewSize)
+b32 ResizeBuffer(ID3D11Device *Device, dx_buffer *Buffer, u32 NewSize)
 {
     D3D11_BUFFER_DESC Desc;
     Buffer->Ptr->GetDesc(&Desc);

@@ -1,4 +1,4 @@
-// 
+//
 // MIT License
 // 
 // Copyright (c) 2018 Marcus Larsson
@@ -53,7 +53,7 @@ static void SetupAsPaddle(dynamics_state *Dynamics, entity *Entity, mesh_index M
 static void SetupPaddles(resources *Resources, dynamics_state *Dynamics, entity_pool *Pool, 
                          mesh_index MeshIndex, entity **EntityPtrs)
 {
-    texture_index TextureIndex = LoadBMP(Resources, "data\\paddle.bmp");
+    texture_index TextureIndex = LoadBMP(Resources, "data\\bitmaps\\paddle.bmp");
     assert(TextureIndex >= 0);
     
     v2 VelocityMax = V2(3000.0f, 3000.0f);

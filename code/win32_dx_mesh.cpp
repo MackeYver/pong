@@ -28,7 +28,7 @@
 
 
 
-b32 CreateBuffer(dx_state *State, void *Data, size_t DataSize, size_t ElementSize, ID3D11Buffer **Output)
+b32 CreateBuffer(dx_state *State, void *Data, u32 DataSize, u32 ElementSize, ID3D11Buffer **Output)
 {
     b32 Result = true;
     
@@ -72,7 +72,7 @@ s32 CreateMesh(void *DXState, mesh *Mesh)
         DXMesh.Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
         
         assert(Mesh->Positions);
-        size_t Size = sizeof(v3) * Mesh->VertexCount;
+        u32 Size = sizeof(v3) * Mesh->VertexCount;
         if (!CreateBuffer(State, Mesh->Positions, Size, sizeof(v3), &DXMesh.Positions))
         {
             printf("Failed to create the buffer with the positions!\n");
@@ -117,7 +117,7 @@ s32 CreateMesh(void *DXState, mesh *Mesh)
         if (Result != 1)
         {
             State->Meshes.push_back(DXMesh);
-            Result = State->Meshes.size() - 1;
+            Result = static_cast<s32>(State->Meshes.size()) - 1;
         }
     }
     

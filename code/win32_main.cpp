@@ -477,5 +477,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hInstancePrev, LPSTR lpCmdLine
 #endif
     
     
-    return msg.wParam;
+    return 0;
 }
