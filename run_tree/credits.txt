@@ -4,5 +4,10 @@ Marcus Larsson
 
 Audio
 *****
-theme.wav, original name "Take a Chance" created by Kevin MacLeod.
+Theme song by Kevin MacLeod.
+"Take a Chance"
+Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 3.0
+http://creativecommons.org/licenses/by/3.0/
+
 Rest of the wavs was created in Bfxr (https://www.bfxr.net/).
